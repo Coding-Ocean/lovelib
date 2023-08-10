@@ -3,9 +3,11 @@
   <ItemGroup>
     <ClCompile Include="window.cpp" />
     <ClCompile Include="lovelib.cpp" />
+    <ClCompile Include="graphic.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="window.h" />
     <ClInclude Include="lovelib.h" />
+    <ClInclude Include="graphic.h" />
   </ItemGroup>
 </Project>

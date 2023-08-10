@@ -131,10 +131,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="graphic.cpp" />
     <ClCompile Include="lovelib.cpp" />
     <ClCompile Include="window.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="graphic.h" />
     <ClInclude Include="lovelib.h" />
     <ClInclude Include="window.h" />
   </ItemGroup>
