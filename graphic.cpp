@@ -1,6 +1,7 @@
 #pragma comment(lib, "d3d9.lib")
 
 #include <d3d9.h>
+#include "common.h"
 
 IDirect3D9* D3D = NULL;
 IDirect3DDevice9* Dev = NULL;
@@ -11,6 +12,7 @@ void createGraphic()
 
     //Direct3Dの親分ポインタ
     D3D = Direct3DCreate9(D3D_SDK_VERSION);
+    WARNING(D3D==0, "Direct3Dがつくれませんでした", "");
 
     //バックバッファとデプスバッファの情報を用意する
     D3DPRESENT_PARAMETERS d3dpp{};
@@ -30,12 +32,13 @@ void createGraphic()
         &d3dpp,
         &Dev
     );
+    WARNING(FAILED(hr), "Graphic Deviceがつくれませんでした", "");
 }
 
 void destroyGraphic()
 {
-    Dev->Release();
-    D3D->Release();
+    SAFE_RELEASE(Dev);
+    SAFE_RELEASE(D3D);
 }
 
 void clear(float r, float g, float b)

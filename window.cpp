@@ -1,4 +1,5 @@
 #include<windows.h>
+#include"common.h"
 #include"window.h"
 LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wp, LPARAM lp)
 {
@@ -40,7 +41,8 @@ void createWindow(const char* appName, int windowWidth, int windowHeight)
     wc.hCursor = LoadCursor(NULL, IDC_ARROW);   //カーソルハンドルを指定
     wc.hbrBackground = hBrush;                  //背景用のブラシハンドルを指定
     wc.lpszClassName = "GameWindow";            //ウインドウクラス名を指定
-    RegisterClass(&wc);//ここで登録！！！
+    ATOM rt = RegisterClass(&wc);//ここで登録！！！
+    WARNING(rt == 0, "ウィンドウクラスが登録できませんでした", "");
 
     //ウィンドウスタイルを決定する
     unsigned windowStyle = WS_SYSMENU;//枠あり
@@ -62,6 +64,7 @@ void createWindow(const char* appName, int windowWidth, int windowHeight)
         hInstance,                  //アプリケーションインスタンスのハンドル
         NULL                        //ウィンドウに関連付けるモジュールハンドル
     );
+    WARNING(hWnd == 0, "ウィンドウがつくれませんでした", "");
 
     //ウィンドウの大きさと位置を再計算する。
     RECT rect;
