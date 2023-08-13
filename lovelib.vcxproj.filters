@@ -4,11 +4,37 @@
     <ClCompile Include="window.cpp" />
     <ClCompile Include="lovelib.cpp" />
     <ClCompile Include="graphic.cpp" />
+    <ClCompile Include="MAT.cpp">
+      <Filter>math</Filter>
+    </ClCompile>
+    <ClCompile Include="VEC.cpp">
+      <Filter>math</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="window.h" />
     <ClInclude Include="lovelib.h" />
     <ClInclude Include="graphic.h" />
     <ClInclude Include="common.h" />
+    <ClInclude Include="MAT.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="VEC.h">
+      <Filter>math</Filter>
+    </ClInclude>
+    <ClInclude Include="VERTEX.h">
+      <Filter>container</Filter>
+    </ClInclude>
+    <ClInclude Include="VERTEX_BUFFER.h">
+      <Filter>container</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <Filter Include="math">
+      <UniqueIdentifier>{ad2e3b69-3f9e-4bd3-829b-85cf3636ed0b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="container">
+      <UniqueIdentifier>{25d55f48-32d6-4e25-a793-8e89afe5931a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
 </Project>

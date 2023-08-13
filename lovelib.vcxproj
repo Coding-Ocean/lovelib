@@ -133,12 +133,18 @@
   <ItemGroup>
     <ClCompile Include="graphic.cpp" />
     <ClCompile Include="lovelib.cpp" />
+    <ClCompile Include="MAT.cpp" />
+    <ClCompile Include="VEC.cpp" />
     <ClCompile Include="window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="common.h" />
     <ClInclude Include="graphic.h" />
     <ClInclude Include="lovelib.h" />
+    <ClInclude Include="MAT.h" />
+    <ClInclude Include="VEC.h" />
+    <ClInclude Include="VERTEX.h" />
+    <ClInclude Include="VERTEX_BUFFER.h" />
     <ClInclude Include="window.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
