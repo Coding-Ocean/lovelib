@@ -142,6 +142,8 @@
     <ClInclude Include="graphic.h" />
     <ClInclude Include="lovelib.h" />
     <ClInclude Include="MAT.h" />
+    <ClInclude Include="stb_image.h" />
+    <ClInclude Include="TEXTURE.h" />
     <ClInclude Include="VEC.h" />
     <ClInclude Include="VERTEX.h" />
     <ClInclude Include="VERTEX_BUFFER.h" />

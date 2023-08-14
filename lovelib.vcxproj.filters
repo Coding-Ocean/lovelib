@@ -28,6 +28,12 @@
     <ClInclude Include="VERTEX_BUFFER.h">
       <Filter>container</Filter>
     </ClInclude>
+    <ClInclude Include="TEXTURE.h">
+      <Filter>container</Filter>
+    </ClInclude>
+    <ClInclude Include="stb_image.h">
+      <Filter>container</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="math">
