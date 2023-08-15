@@ -34,6 +34,9 @@
     <ClInclude Include="stb_image.h">
       <Filter>container</Filter>
     </ClInclude>
+    <ClInclude Include="INDEX_BUFFER.h">
+      <Filter>container</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="math">
