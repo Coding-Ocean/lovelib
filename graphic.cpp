@@ -67,6 +67,16 @@ void createGraphic()
         WARNING(FAILED(hr), "Graphic Deviceがつくれませんでした", "");
     }
 
+    //テクスチャステージ
+    {
+        Dev->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
+        Dev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
+        Dev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+        Dev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
+        Dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
+        Dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
+    }
+
     //レンダーステート
     {
         Dev->SetRenderState(D3DRS_ZENABLE, TRUE);
