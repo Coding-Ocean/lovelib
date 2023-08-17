@@ -10,6 +10,9 @@
     <ClCompile Include="VEC.cpp">
       <Filter>math</Filter>
     </ClCompile>
+    <ClCompile Include="primitive.cpp">
+      <Filter>container</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="window.h" />
@@ -35,6 +38,9 @@
       <Filter>container</Filter>
     </ClInclude>
     <ClInclude Include="INDEX_BUFFER.h">
+      <Filter>container</Filter>
+    </ClInclude>
+    <ClInclude Include="primitive.h">
       <Filter>container</Filter>
     </ClInclude>
   </ItemGroup>

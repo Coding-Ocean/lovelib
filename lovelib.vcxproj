@@ -134,6 +134,7 @@
     <ClCompile Include="graphic.cpp" />
     <ClCompile Include="lovelib.cpp" />
     <ClCompile Include="MAT.cpp" />
+    <ClCompile Include="primitive.cpp" />
     <ClCompile Include="VEC.cpp" />
     <ClCompile Include="window.cpp" />
   </ItemGroup>
@@ -143,6 +144,7 @@
     <ClInclude Include="INDEX_BUFFER.h" />
     <ClInclude Include="lovelib.h" />
     <ClInclude Include="MAT.h" />
+    <ClInclude Include="primitive.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="TEXTURE.h" />
     <ClInclude Include="VEC.h" />
