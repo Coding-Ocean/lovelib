@@ -6,9 +6,9 @@ void present();
 
 void wireframe();
 void solid();
+void ambient(float r, float g, float b);
 
 void fill(float r, float g, float b, float a = 1);
-void setAmbient(float r, float g, float b);
 void setLightDirection(float dx, float dy, float dz);
 void setView(struct VEC& campos, struct VEC& lookat, struct VEC& up);
 

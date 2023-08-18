@@ -204,19 +204,19 @@ void solid()
     Dev->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
 }
 
-void fill(float r, float g, float b, float a)
-{
-    Material.Diffuse = { r,g,b,a };
-    Material.Ambient = { r,g,b,a };
-}
-
-void setAmbient(float r, float g, float b)
+void ambient(float r, float g, float b)
 {
     unsigned ambient = 
         unsigned(r * 255) << 16 | 
         unsigned(g * 255) << 8 | 
         unsigned(b * 255);
     Dev->SetRenderState(D3DRS_AMBIENT, ambient);
+}
+
+void fill(float r, float g, float b, float a)
+{
+    Material.Diffuse = { r,g,b,a };
+    Material.Ambient = { r,g,b,a };
 }
 
 void setLightDirection(float dx, float dy, float dz)
