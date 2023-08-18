@@ -204,19 +204,29 @@ void solid()
     Dev->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
 }
 
+void cullnone()
+{
+    Dev->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+}
+
+void cullcw()
+{
+    Dev->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
+}
+
+void ambient(float r, float g, float b)
+{
+    unsigned ambient =
+        unsigned(r * 255) << 16 |
+        unsigned(g * 255) << 8 |
+        unsigned(b * 255);
+    Dev->SetRenderState(D3DRS_AMBIENT, ambient);
+}
+
 void fill(float r, float g, float b, float a)
 {
     Material.Diffuse = { r,g,b,a };
     Material.Ambient = { r,g,b,a };
-}
-
-void setAmbient(float r, float g, float b)
-{
-    unsigned ambient = 
-        unsigned(r * 255) << 16 | 
-        unsigned(g * 255) << 8 | 
-        unsigned(b * 255);
-    Dev->SetRenderState(D3DRS_AMBIENT, ambient);
 }
 
 void setLightDirection(float dx, float dy, float dz)
@@ -324,27 +334,6 @@ int createTexture(unsigned char* pixels, int texWidth, int texHeight, const char
     return (int)Textures.size() - 1;
 }
 
-int createShape(int numAngles, float ratio)
-{
-    //TRIANGLEFAN設定で描画するための頂点バッファをつくる
-    std::vector<VERTEX> vertices;
-    float divAngle = 3.1415926f * 2 / numAngles;
-    //中心点
-    VERTEX temp;
-    vertices.emplace_back(temp);
-    //周囲の頂点
-    for (int i = 0; i < numAngles; i++) {
-        float radius = i % 2 == 0 ? 0.5f : 0.5f * ratio;
-        temp.x = -sin(divAngle * i) * radius;
-        temp.y = cos(divAngle * i) * radius;
-        vertices.emplace_back(temp);
-    }
-    //最後の頂点は１番目の頂点と同じ
-    vertices.emplace_back(vertices[1]);
-    //バッファをつくる。+2は中心点と最後の頂点の分
-    return createVertexBuffer(vertices.data(), numAngles + 2);
-}
-
 void rect(float px, float py, float w, float h, float rad, int order)
 {
     //行列
@@ -384,6 +373,27 @@ void circle(float px, float py, float diameter, int order)
     Dev->SetStreamSource(0, VertexBuffers[1].obj, 0, sizeof(VERTEX));
     //描画（最後のパラメタは描画する三角形数）
     Dev->DrawPrimitive(D3DPT_TRIANGLEFAN, 0, VertexBuffers[1].numVertices - 2);
+}
+
+int createShape(int numAngles, float ratio)
+{
+    //TRIANGLEFAN設定で描画するための頂点バッファをつくる
+    std::vector<VERTEX> vertices;
+    float divAngle = 3.1415926f * 2 / numAngles;
+    //中心点
+    VERTEX temp;
+    vertices.emplace_back(temp);
+    //周囲の頂点
+    for (int i = 0; i < numAngles; i++) {
+        float radius = i % 2 == 0 ? 0.5f : 0.5f * ratio;
+        temp.x = -sin(divAngle * i) * radius;
+        temp.y = cos(divAngle * i) * radius;
+        vertices.emplace_back(temp);
+    }
+    //最後の頂点は１番目の頂点と同じ
+    vertices.emplace_back(vertices[1]);
+    //バッファをつくる。+2は中心点と最後の頂点の分
+    return createVertexBuffer(vertices.data(), numAngles + 2);
 }
 
 void shape(int vertexId, float px, float py, float w, float h, float rad, int order)
