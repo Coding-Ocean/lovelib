@@ -84,6 +84,7 @@ void createGraphic()
         Dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
         Dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
         Dev->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
+        Dev->SetRenderState(D3DRS_NORMALIZENORMALS, TRUE);
         Dev->SetRenderState(D3DRS_LIGHTING, TRUE);
         Dev->SetRenderState(D3DRS_AMBIENT, 0x0);
         Dev->LightEnable(0, TRUE);

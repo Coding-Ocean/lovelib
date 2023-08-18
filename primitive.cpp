@@ -3,9 +3,8 @@
 #include"VERTEX.h"
 #include"graphic.h"
 
-int createVtxCube()
+int createVtxCube(float l)
 {
-	float l = 0.5f;
 	VERTEX vertices[] = {
 		//正面
 		-l, l,-l, 0,0,-1, 0,0,
@@ -60,7 +59,7 @@ int createIdxCube()
 	return createIndexBuffer(indices, _countof(indices));
 }
 
-int createVtxSphere(int numAngles, float radius)
+int createVtxSphere(float radius, int numAngles)
 {
 	std::vector<VERTEX> vertices;
 	//北極南極点以外の頂点
@@ -84,7 +83,7 @@ int createVtxSphere(int numAngles, float radius)
 	}
 	//北極点
 	v.x = 0; v.y = radius; v.z = 0; v.nx = 0, v.ny = 1, v.nz = 0;
-	v.u = 0.5f; v.u = 0;
+	v.u = 0.5f; v.v = 0;
 	vertices.push_back(v);
 	size_t n = vertices.size();
 	//南極点

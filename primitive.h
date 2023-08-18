@@ -1,5 +1,5 @@
 #pragma once
-int createVtxCube();
+int createVtxCube(float length=0.5f);
 int createIdxCube();
-int createVtxSphere(int numAngles=30, float radius = 0.5f);
+int createVtxSphere(float radius=0.5f, int numAngles=30 );
 int createIdxSphere(int numAngles=30);
