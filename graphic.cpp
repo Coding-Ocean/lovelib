@@ -88,7 +88,6 @@ void createGraphic()
         Dev->SetRenderState(D3DRS_LIGHTING, TRUE);
         Dev->SetRenderState(D3DRS_AMBIENT, 0x0);
         Dev->LightEnable(0, TRUE);
-    
     }
 
     //マテリアル初期値：白
@@ -246,14 +245,14 @@ void setView(struct VEC& campos, struct VEC& lookat, struct VEC& up)
 //頂点フォーマット
 #define VERTEX_FORMAT ( D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_TEX1 )
 
-int createVertexBuffer(VERTEX* vertices, int numVertices)
+int createVertexBuffer(VERTEX* vertices, size_t numVertices)
 {
     IDirect3DVertexBuffer9* obj = 0;
-    unsigned bufferSize = sizeof(VERTEX) * numVertices;
+    size_t bufferSize = sizeof(VERTEX) * numVertices;
     
     HRESULT hr;
     //頂点バッファオブジェクトをつくる
-    hr = Dev->CreateVertexBuffer(bufferSize,
+    hr = Dev->CreateVertexBuffer((UINT)bufferSize,
         0/*USAGE*/, VERTEX_FORMAT, D3DPOOL_MANAGED,
         &obj, NULL
     );
@@ -261,26 +260,26 @@ int createVertexBuffer(VERTEX* vertices, int numVertices)
 
     //頂点バッファオブジェクトに頂点データをコピー
     void* buffer = 0;
-    hr = obj->Lock(0, bufferSize, (void**)&buffer, 0);
+    hr = obj->Lock(0, (UINT)bufferSize, (void**)&buffer, 0);
     WARNING(FAILED(hr), "VertexBuffer", "Lock error");
     memcpy(buffer, vertices, bufferSize);
     obj->Unlock();
 
     //頂点バッファ配列に追加
-    VertexBuffers.emplace_back(obj, numVertices);
+    VertexBuffers.emplace_back(obj, (UINT)numVertices);
 
     //頂点バッファ番号を返す
     return int(VertexBuffers.size()) - 1;
 }
 
-int createIndexBuffer(unsigned short* indices, int numIndices)
+int createIndexBuffer(unsigned short* indices, size_t numIndices)
 {
     IDirect3DIndexBuffer9* obj = 0;
-    unsigned bufferSize = sizeof(unsigned short) * numIndices;
+    size_t bufferSize = sizeof(unsigned short) * numIndices;
 
     HRESULT hr;
     //インデックスバッファオブジェクトをつくる
-    hr = Dev->CreateIndexBuffer(bufferSize,
+    hr = Dev->CreateIndexBuffer((UINT)bufferSize,
         0/*USAGE*/, D3DFMT_INDEX16, D3DPOOL_MANAGED,
         &obj, NULL
     );
@@ -288,13 +287,13 @@ int createIndexBuffer(unsigned short* indices, int numIndices)
 
     //インデックスバッファにデータをコピー
     WORD* buffer;
-    hr = obj->Lock(0, bufferSize, (void**)&buffer, 0);
+    hr = obj->Lock(0, (UINT)bufferSize, (void**)&buffer, 0);
     WARNING(FAILED(hr), "IndexBuffer", "Lock error");
     memcpy(buffer, indices, bufferSize);
     obj->Unlock();
 
     //インデックスバッファ配列に追加
-    IndexBuffers.emplace_back(obj, numIndices);
+    IndexBuffers.emplace_back(obj, (UINT)numIndices);
 
     //インデックスバッファ番号を返す
     return int(IndexBuffers.size()) - 1;
