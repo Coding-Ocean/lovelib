@@ -245,14 +245,14 @@ void setView(struct VEC& campos, struct VEC& lookat, struct VEC& up)
 //頂点フォーマット
 #define VERTEX_FORMAT ( D3DFVF_XYZ | D3DFVF_NORMAL | D3DFVF_TEX1 )
 
-int createVertexBuffer(VERTEX* vertices, size_t numVertices)
+int createVertexBuffer(VERTEX* vertices, int numVertices)
 {
     IDirect3DVertexBuffer9* obj = 0;
-    size_t bufferSize = sizeof(VERTEX) * numVertices;
-    
+    unsigned bufferSize = sizeof(VERTEX) * numVertices;
+
     HRESULT hr;
     //頂点バッファオブジェクトをつくる
-    hr = Dev->CreateVertexBuffer((UINT)bufferSize,
+    hr = Dev->CreateVertexBuffer(bufferSize,
         0/*USAGE*/, VERTEX_FORMAT, D3DPOOL_MANAGED,
         &obj, NULL
     );
@@ -260,40 +260,40 @@ int createVertexBuffer(VERTEX* vertices, size_t numVertices)
 
     //頂点バッファオブジェクトに頂点データをコピー
     void* buffer = 0;
-    hr = obj->Lock(0, (UINT)bufferSize, (void**)&buffer, 0);
+    hr = obj->Lock(0, bufferSize, (void**)&buffer, 0);
     WARNING(FAILED(hr), "VertexBuffer", "Lock error");
     memcpy(buffer, vertices, bufferSize);
     obj->Unlock();
 
     //頂点バッファ配列に追加
-    VertexBuffers.emplace_back(obj, (UINT)numVertices);
+    VertexBuffers.emplace_back(obj, numVertices);
 
     //頂点バッファ番号を返す
     return int(VertexBuffers.size()) - 1;
 }
 
-int createIndexBuffer(unsigned short* indices, size_t numIndices)
+int createIndexBuffer(unsigned short* indices, int numIndices)
 {
     IDirect3DIndexBuffer9* obj = 0;
-    size_t bufferSize = sizeof(unsigned short) * numIndices;
+    unsigned bufferSize = sizeof(unsigned short) * numIndices;
 
     HRESULT hr;
     //インデックスバッファオブジェクトをつくる
-    hr = Dev->CreateIndexBuffer((UINT)bufferSize,
+    hr = Dev->CreateIndexBuffer(bufferSize,
         0/*USAGE*/, D3DFMT_INDEX16, D3DPOOL_MANAGED,
         &obj, NULL
     );
     WARNING(FAILED(hr), "IndexBuffer", "Create error");
 
     //インデックスバッファにデータをコピー
-    WORD* buffer;
-    hr = obj->Lock(0, (UINT)bufferSize, (void**)&buffer, 0);
+    void* buffer = 0;
+    hr = obj->Lock(0, bufferSize, (void**)&buffer, 0);
     WARNING(FAILED(hr), "IndexBuffer", "Lock error");
     memcpy(buffer, indices, bufferSize);
     obj->Unlock();
 
     //インデックスバッファ配列に追加
-    IndexBuffers.emplace_back(obj, (UINT)numIndices);
+    IndexBuffers.emplace_back(obj, numIndices);
 
     //インデックスバッファ番号を返す
     return int(IndexBuffers.size()) - 1;
@@ -314,15 +314,20 @@ int createTexture(unsigned char* pixels, int texWidth, int texHeight, const char
     D3DLOCKED_RECT lockRect;
     hr = obj->LockRect(0, &lockRect, NULL, D3DLOCK_DISCARD);
     WARNING(FAILED(hr), "Texture", "Lock error");
+    unsigned char r, g, b, a;
+    unsigned int argb;
     for (int y = 0; y < texHeight; y++) {
         for (int x = 0; x < texWidth; x++) {
+            //コピー元pixelデータ
             int i = (x + y * texWidth) * 4;
-            DWORD r = pixels[i];
-            DWORD g = pixels[i + 1];
-            DWORD b = pixels[i + 2];
-            DWORD a = pixels[i + 3];
-            DWORD color = a << 24 | r << 16 | g << 8 | b;
-            memcpy((BYTE*)lockRect.pBits + i, &color, sizeof(DWORD));
+            r = pixels[i];
+            g = pixels[i + 1];
+            b = pixels[i + 2];
+            a = pixels[i + 3];
+            argb = a << 24 | r << 16 | g << 8 | b;
+            //コピー先アドレス
+            void* buffer = (unsigned char*)lockRect.pBits + i;
+            memcpy(buffer, &argb, sizeof(unsigned int));
         }
     }
     obj->UnlockRect(0);

@@ -91,7 +91,7 @@ int createVtxSphere(float radius, int numAngles)
 	v.u = 0.5f; v.v = 1;
 	vertices.push_back(v);
 
-	return createVertexBuffer(vertices.data(), vertices.size());
+	return createVertexBuffer(vertices.data(), (int)vertices.size());
 }
 int createIdxSphere(int numAngles)
 {
@@ -128,5 +128,5 @@ int createIdxSphere(int numAngles)
 			indices.push_back(k + 1);
 		}
 	}
-	return createIndexBuffer(indices.data(), indices.size());
+	return createIndexBuffer(indices.data(), (int)indices.size());
 }

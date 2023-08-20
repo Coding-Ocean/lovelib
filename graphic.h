@@ -17,8 +17,8 @@ void setLightDirection(float dx, float dy, float dz);
 //ビュー行列
 void setView(struct VEC& campos, struct VEC& lookat, struct VEC& up);
 //DirectXのオブジェクトバッファー
-int createVertexBuffer(struct VERTEX* vertices, size_t numVertices);
-int createIndexBuffer(unsigned short* indices, size_t numIndices);
+int createVertexBuffer(struct VERTEX* vertices, int numVertices);
+int createIndexBuffer(unsigned short* indices, int numIndices);
 int createTexture(unsigned char* pixels, int texWidth, int texHeight, const char* filename);
 //２D（テクスチャ無し）
 void rect(float px, float py, float w, float h, float rad = 0, int order = 0);
