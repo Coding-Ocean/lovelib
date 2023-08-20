@@ -276,7 +276,7 @@ int createIndexBuffer(unsigned short* indices, int numIndices)
     WARNING(FAILED(hr), "IndexBuffer", "Create error");
 
     //インデックスバッファにデータをコピー
-    WORD* buffer;
+    void* buffer = 0;
     hr = obj->Lock(0, bufferSize, (void**)&buffer, 0);
     WARNING(FAILED(hr), "IndexBuffer", "Lock error");
     memcpy(buffer, indices, bufferSize);
@@ -304,15 +304,20 @@ int createTexture(unsigned char* pixels, int texWidth, int texHeight, const char
     D3DLOCKED_RECT lockRect;
     hr = obj->LockRect(0, &lockRect, NULL, D3DLOCK_DISCARD);
     WARNING(FAILED(hr), "Texture", "Lock error");
+    unsigned char r, g, b, a;
+    unsigned int argb;
     for (int y = 0; y < texHeight; y++) {
         for (int x = 0; x < texWidth; x++) {
+            //コピー元pixelデータ
             int i = (x + y * texWidth) * 4;
-            DWORD r = pixels[i];
-            DWORD g = pixels[i + 1];
-            DWORD b = pixels[i + 2];
-            DWORD a = pixels[i + 3];
-            DWORD color = a << 24 | r << 16 | g << 8 | b;
-            memcpy((BYTE*)lockRect.pBits + i, &color, sizeof(DWORD));
+            r = pixels[i];
+            g = pixels[i + 1];
+            b = pixels[i + 2];
+            a = pixels[i + 3];
+            argb = a << 24 | r << 16 | g << 8 | b;
+            //コピー先アドレス
+            void* buffer = (unsigned char*)lockRect.pBits + i;
+            memcpy(buffer, &argb, sizeof(unsigned int));
         }
     }
     obj->UnlockRect(0);
