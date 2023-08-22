@@ -23,7 +23,7 @@ int createTexture(unsigned char* pixels, int texWidth, int texHeight, const char
 //２D（テクスチャ無し）
 void rect(float px, float py, float w, float h, float rad = 0, int order = 0);
 void circle(float px, float py, float diameter, int order = 0);
-int createShape(int numAngles, float ratio = 1);
+int createShape(int numCorners, float ratio = 1);
 void shape(int vertexId, float px, float py, float w, float h, float rad = 0, int order = 0);
 //２D（テクスチャ有り）
 int loadImage(const char* filename);

@@ -59,25 +59,25 @@ int createIdxCube()
 	return createIndexBuffer(indices, _countof(indices));
 }
 
-int createVtxSphere(float radius, int numAngles)
+int createVtxSphere(float radius, int numCorners)
 {
 	std::vector<VERTEX> vertices;
 	//北極南極点以外の頂点
-	float divAngle = 3.141592f * 2 / numAngles;
+	float divAngle = 3.141592f * 2 / numCorners;
 	VERTEX v;
 	float r;
-	for (int j = 1; j < numAngles / 2; j++) {
+	for (int j = 1; j < numCorners / 2; j++) {
 		v.ny = cos(divAngle * j);
 		v.y = v.ny * radius;
 		r = sin(divAngle * j);
 		v.v = (1.0f - asin(v.ny) / (3.141592f / 2.0f)) / 2.0f;
-		for (int i = 0; i <= numAngles; i++) {
+		for (int i = 0; i <= numCorners; i++) {
 			v.nx = cos(divAngle * i) * r;
 			v.x = v.nx * radius;
 			v.nz = sin(divAngle * i) * r;
 			v.z = v.nz * radius;
 			v.u = atan2(v.z, v.x) / (3.141592f * 2);
-			if (i > numAngles / 2)	v.u += 1.0f;
+			if (i > numCorners / 2)	v.u += 1.0f;
 			vertices.push_back(v);
 		}
 	}
@@ -93,12 +93,13 @@ int createVtxSphere(float radius, int numAngles)
 
 	return createVertexBuffer(vertices.data(), (int)vertices.size());
 }
-int createIdxSphere(int numAngles)
+
+int createIdxSphere(int numCorners)
 {
 	std::vector<unsigned short> indices;
-	int stride = numAngles + 1;
-	for (int j = 0; j < numAngles / 2 - 2; j++) {
-		for (int i = 0; i < numAngles; i++) {
+	int stride = numCorners + 1;
+	for (int j = 0; j < numCorners / 2 - 2; j++) {
+		for (int i = 0; i < numCorners; i++) {
 			int k = i + stride * j;
 			indices.push_back(k);
 			indices.push_back(k + stride);
@@ -110,8 +111,8 @@ int createIdxSphere(int numAngles)
 	}
 	{
 		//北極点のインデックスn
-		int n = (numAngles + 1) * (numAngles / 2 - 1);
-		for (int i = 0; i < numAngles; i++) {
+		int n = (numCorners + 1) * (numCorners / 2 - 1);
+		for (int i = 0; i < numCorners; i++) {
 			indices.push_back(n);
 			indices.push_back(i);
 			indices.push_back(i + 1);
@@ -119,10 +120,10 @@ int createIdxSphere(int numAngles)
 	}
 	{
 		//南極点のインデックスs
-		int s = (numAngles + 1) * (numAngles / 2 - 1) + 1;
-		int j = numAngles / 2 - 2;
-		for (int i = 0; i < numAngles; i++) {
-			int k = i + (numAngles + 1) * j;
+		int s = (numCorners + 1) * (numCorners / 2 - 1) + 1;
+		int j = numCorners / 2 - 2;
+		for (int i = 0; i < numCorners; i++) {
+			int k = i + (numCorners + 1) * j;
 			indices.push_back(k);
 			indices.push_back(s);
 			indices.push_back(k + 1);

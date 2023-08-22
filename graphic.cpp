@@ -67,36 +67,42 @@ void createGraphic()
         WARNING(FAILED(hr), "Graphic Deviceがつくれませんでした", "");
     }
 
-    //テクスチャステージ
+    //テクスチャステージの初期設定
     {
+        //ポリゴンの色とテクスチャの色を乗算合成
         Dev->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
-        Dev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
-        Dev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
+        Dev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_DIFFUSE);
+        Dev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_TEXTURE);
+        //ポリゴンのアルファとテクスチャのアルファを乗算合成
         Dev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
-        Dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_TEXTURE);
-        Dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_DIFFUSE);
+        Dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
+        Dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TEXTURE);
     }
 
-    //レンダーステート
+    //レンダーステートの初期設定
     {
+        //時計回りポリゴンを裏面とし、描画しない
+        Dev->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
+        //深度バッファに深度を書き込む
         Dev->SetRenderState(D3DRS_ZENABLE, TRUE);
+        //半透明の合成方法
         Dev->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
         Dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
         Dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-        Dev->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
-        Dev->SetRenderState(D3DRS_NORMALIZENORMALS, TRUE);
-        Dev->SetRenderState(D3DRS_LIGHTING, TRUE);
-        Dev->SetRenderState(D3DRS_AMBIENT, 0x0);
-        Dev->LightEnable(0, TRUE);
+        //ライティング系
+        Dev->SetRenderState(D3DRS_NORMALIZENORMALS, TRUE);//拡大縮小しても法線の長さを１にする
+        Dev->SetRenderState(D3DRS_AMBIENT, 0x0);//暗い部分に環境光を照らす量
+        Dev->LightEnable(0, TRUE);//スイッチオン・オフ
     }
 
-    //マテリアル初期値：白
+    //以下グローバル変数の初期値設定--------------------------------------------
+    //マテリアル
     {
         Material.Diffuse = { 1,1,1,1 };
         Material.Ambient = { 1,1,1,1 };
     }
 
-    //3D用ライト初期値
+    //3D用ライト
     {
         Light.Type = D3DLIGHT_DIRECTIONAL;
         Light.Direction = { 0,0,1 };
@@ -124,7 +130,7 @@ void createGraphic()
         Proj.setPers(0.7f, (float)rect.right / rect.bottom, 0.1f, 30.0f);
     }
 
-    //頂点データ０：正方形
+    //頂点バッファ０：正方形
     {
         const int numVertices = 4;
         VERTEX vertices[numVertices] = {
@@ -136,7 +142,7 @@ void createGraphic()
         createVertexBuffer(vertices, numVertices);
     }
 
-    //頂点データ１：円
+    //頂点バッファ１：円
     {
         std::vector<VERTEX> vertices;
         int numVertices = 60;
@@ -380,16 +386,16 @@ void circle(float px, float py, float diameter, int order)
     Dev->DrawPrimitive(D3DPT_TRIANGLEFAN, 0, VertexBuffers[1].numVertices - 2);
 }
 
-int createShape(int numAngles, float ratio)
+int createShape(int numCorners, float ratio)
 {
     //TRIANGLEFAN設定で描画するための頂点バッファをつくる
     std::vector<VERTEX> vertices;
-    float divAngle = 3.1415926f * 2 / numAngles;
+    float divAngle = 3.1415926f * 2 / numCorners;
     //中心点
     VERTEX temp;
     vertices.emplace_back(temp);
     //周囲の頂点
-    for (int i = 0; i < numAngles; i++) {
+    for (int i = 0; i < numCorners; i++) {
         float radius = i % 2 == 0 ? 0.5f : 0.5f * ratio;
         temp.x = -sin(divAngle * i) * radius;
         temp.y = cos(divAngle * i) * radius;
@@ -398,7 +404,7 @@ int createShape(int numAngles, float ratio)
     //最後の頂点は１番目の頂点と同じ
     vertices.emplace_back(vertices[1]);
     //バッファをつくる。+2は中心点と最後の頂点の分
-    return createVertexBuffer(vertices.data(), numAngles + 2);
+    return createVertexBuffer(vertices.data(), numCorners + 2);
 }
 
 void shape(int vertexId, float px, float py, float w, float h, float rad, int order)
