@@ -81,6 +81,10 @@ void createGraphic()
 
     //レンダーステートの初期設定
     {
+        //ライティング系
+        Dev->LightEnable(0, TRUE);//スイッチオン・オフ
+        Dev->SetRenderState(D3DRS_AMBIENT, 0x000000);//暗い部分に環境光を照らす量
+        Dev->SetRenderState(D3DRS_NORMALIZENORMALS, TRUE);//拡大縮小しても法線の長さを１にする
         //時計回りポリゴンを裏面とし、描画しない
         Dev->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
         //深度バッファに深度を書き込む
@@ -89,10 +93,6 @@ void createGraphic()
         Dev->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
         Dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
         Dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-        //ライティング系
-        Dev->SetRenderState(D3DRS_NORMALIZENORMALS, TRUE);//拡大縮小しても法線の長さを１にする
-        Dev->SetRenderState(D3DRS_AMBIENT, 0x0);//暗い部分に環境光を照らす量
-        Dev->LightEnable(0, TRUE);//スイッチオン・オフ
     }
 
     //以下グローバル変数の初期値設定--------------------------------------------
@@ -220,6 +220,11 @@ void cullcw()
     Dev->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
 }
 
+void cullccw()
+{
+    Dev->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+}
+
 void ambient(float r, float g, float b)
 {
     unsigned ambient =
@@ -241,6 +246,16 @@ void setLightDirection(float dx, float dy, float dz)
     Light.Direction.x = dx / len;
     Light.Direction.y = dy / len;
     Light.Direction.z = dz / len;
+}
+
+void lightOff()
+{
+    Dev->LightEnable(0, FALSE);
+}
+
+void notNormalizeNormals()
+{
+    Dev->SetRenderState(D3DRS_NORMALIZENORMALS, FALSE);
 }
 
 void setView(struct VEC& campos, struct VEC& lookat, struct VEC& up)

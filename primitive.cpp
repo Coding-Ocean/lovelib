@@ -3,6 +3,25 @@
 #include"VERTEX.h"
 #include"graphic.h"
 
+int createVtxSquare(float l)
+{
+	VERTEX vertices[] = {
+		-l, l, 0, 0,0,-1, 0,0,
+		-l,-l, 0, 0,0,-1, 0,1,
+		 l,-l, 0, 0,0,-1, 1,1,
+		 l, l, 0, 0,0,-1, 1,0,
+	};
+	return createVertexBuffer(vertices, _countof(vertices));
+}
+int createIdxSquare()
+{
+	unsigned short indices[] = {
+		0,1,2,
+		0,2,3,
+	};
+	return createIndexBuffer(indices, _countof(indices));
+}
+
 int createVtxCube(float l)
 {
 	VERTEX vertices[] = {
@@ -39,7 +58,6 @@ int createVtxCube(float l)
 	};
 	return createVertexBuffer(vertices, _countof(vertices));
 }
-
 int createIdxCube()
 {
 	unsigned short indices[] = {
@@ -93,7 +111,6 @@ int createVtxSphere(float radius, int numCorners)
 
 	return createVertexBuffer(vertices.data(), (int)vertices.size());
 }
-
 int createIdxSphere(int numCorners)
 {
 	std::vector<unsigned short> indices;
@@ -128,6 +145,64 @@ int createIdxSphere(int numCorners)
 			indices.push_back(s);
 			indices.push_back(k + 1);
 		}
+	}
+	return createIndexBuffer(indices.data(), (int)indices.size());
+}
+
+int createVtxCylinder(float radius, int numCorners)
+{
+	std::vector<VERTEX> vertices;
+	float divAngle = 3.141592f * 2 / numCorners;
+	VERTEX v;
+
+	for (int j = 0; j < 2; j++) {
+		v.x = j;
+		v.v = 1 - j;
+		v.nx = 0;
+		for (int i = 0; i <= numCorners; i++) {
+			float angle = divAngle * i;
+			v.nz = cos(angle);
+			v.z = v.nz * radius;
+
+			v.ny = sin(angle);
+			v.y = v.ny * radius;
+
+			v.u = angle / (3.141592f * 2);
+
+			vertices.push_back(v);
+		}
+	}
+
+#if 0
+	for (int j = 0; j < 2; j++) {
+		v.y = j;
+		v.v = 1 - j;
+		for (int i = 0; i <= numCorners; i++) {
+			float angle = divAngle * i;
+			v.nx = cos(angle);
+			v.x = v.nx * radius;
+		
+			v.nz = sin(angle);
+			v.z = v.nz * radius;
+			
+			v.u = angle / (3.141592f * 2);
+			
+			vertices.push_back(v);
+		}
+	}
+#endif
+	return createVertexBuffer(vertices.data(), (int)vertices.size());
+}
+int createIdxCylinder(int numCorners)
+{
+	std::vector<unsigned short> indices;
+	for (int i = 0; i < numCorners; i++) {;
+		indices.push_back(i);
+		indices.push_back(i + 1);
+		indices.push_back(i + numCorners + 2);
+		indices.push_back(i);
+		indices.push_back(i + numCorners + 2);
+		indices.push_back(i + numCorners + 1);
 	}
 	return createIndexBuffer(indices.data(), (int)indices.size());
 }

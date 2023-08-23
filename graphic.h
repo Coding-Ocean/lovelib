@@ -9,11 +9,13 @@ void wireframe();
 void solid();
 void cullnone();
 void cullcw();
+void cullccw();
 void ambient(float r, float g, float b);
 //マテリアル
 void fill(float r, float g, float b, float a = 1);
-//ライト方向
+//ライト
 void setLightDirection(float dx, float dy, float dz);
+void lightOff();
 //ビュー行列
 void setView(struct VEC& campos, struct VEC& lookat, struct VEC& up);
 //DirectXのオブジェクトバッファー
