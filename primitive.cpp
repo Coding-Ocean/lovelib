@@ -149,15 +149,55 @@ int createIdxSphere(int numCorners)
 	return createIndexBuffer(indices.data(), (int)indices.size());
 }
 
-int createVtxCylinder(float radius, int numCorners)
+int createVtxCylinder(float radius, int numCorners, float low, float high)
 {
 	std::vector<VERTEX> vertices;
 	float divAngle = 3.141592f * 2 / numCorners;
 	VERTEX v;
 
 	for (int j = 0; j < 2; j++) {
-		v.x = j;
-		v.v = 1 - j;
+		v.y = j==0? low : high;
+		v.v = 1.0f - j;
+		for (int i = 0; i <= numCorners; i++) {
+			float angle = divAngle * i;
+			v.nx = cos(angle);
+			v.x = v.nx * radius;
+
+			v.nz = sin(angle);
+			v.z = v.nz * radius;
+
+			v.u = angle / (3.141592f * 2);
+
+			vertices.push_back(v);
+		}
+	}
+	for (int j = 0; j < 2; j++) {
+		v.y = j == 0 ? low : high;
+		v.v = 1.0f - j;
+		v.nx = 0;
+		v.ny = -1.0f + j * 2;
+		v.nz = 0;
+		for (int i = 0; i < numCorners; i++) {
+			float angle = divAngle * i;
+			v.x = cos(angle) * radius;
+			v.z = sin(angle) * radius * v.ny;
+
+			v.u = angle / (3.141592f * 2);
+
+			vertices.push_back(v);
+		}
+	}
+	return createVertexBuffer(vertices.data(), (int)vertices.size());
+}
+int createVtxCylinderAxisX(float radius, int numCorners, float low, float high)
+{
+	std::vector<VERTEX> vertices;
+	float divAngle = 3.141592f * 2 / numCorners;
+	VERTEX v;
+
+	for (int j = 0; j < 2; j++) {
+		v.x = j==0? low : high;
+		v.v = 1.0f - j;
 		v.nx = 0;
 		for (int i = 0; i <= numCorners; i++) {
 			float angle = divAngle * i;
@@ -172,27 +212,25 @@ int createVtxCylinder(float radius, int numCorners)
 			vertices.push_back(v);
 		}
 	}
-
-#if 0
 	for (int j = 0; j < 2; j++) {
-		v.y = j;
-		v.v = 1 - j;
-		for (int i = 0; i <= numCorners; i++) {
+		v.x = j == 0 ? low : high;
+		v.v = 1.0f - j;
+		v.nx = -1.0f + j * 2;
+		v.ny = 0;
+		v.nz = 0;
+		for (int i = 0; i < numCorners; i++) {
 			float angle = divAngle * i;
-			v.nx = cos(angle);
-			v.x = v.nx * radius;
-		
-			v.nz = sin(angle);
-			v.z = v.nz * radius;
-			
+			v.z = cos(angle) * radius;
+			v.y = sin(angle) * radius * v.nx;
+
 			v.u = angle / (3.141592f * 2);
-			
+
 			vertices.push_back(v);
 		}
 	}
-#endif
 	return createVertexBuffer(vertices.data(), (int)vertices.size());
 }
+
 int createIdxCylinder(int numCorners)
 {
 	std::vector<unsigned short> indices;
@@ -203,6 +241,18 @@ int createIdxCylinder(int numCorners)
 		indices.push_back(i);
 		indices.push_back(i + numCorners + 2);
 		indices.push_back(i + numCorners + 1);
+	}
+	unsigned short start = (numCorners+1)*2;
+	for (int i = 0; i < numCorners - 2; i++) {
+		indices.push_back(start);
+		indices.push_back(start + i + 1);
+		indices.push_back(start + i + 2);
+	}
+	start += numCorners;
+	for (int i = 0; i < numCorners - 2; i++) {
+		indices.push_back(start);
+		indices.push_back(start + i + 1);
+		indices.push_back(start + i + 2);
 	}
 	return createIndexBuffer(indices.data(), (int)indices.size());
 }

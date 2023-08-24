@@ -10,6 +10,7 @@
 #include "TEXTURE.h"
 #include "MAT.h"
 #include "VEC.h"
+#include "primitive.h"
 #include "graphic.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -27,6 +28,7 @@ MAT Proj2D;
 
 //3D
 D3DLIGHT9 Light;
+MAT World;
 MAT View;
 MAT Proj;
 
@@ -248,17 +250,22 @@ void setLightDirection(float dx, float dy, float dz)
     Light.Direction.z = dz / len;
 }
 
+void lightOn()
+{
+    Dev->LightEnable(0, TRUE);
+}
 void lightOff()
 {
     Dev->LightEnable(0, FALSE);
 }
+
 
 void notNormalizeNormals()
 {
     Dev->SetRenderState(D3DRS_NORMALIZENORMALS, FALSE);
 }
 
-void setView(struct VEC& campos, struct VEC& lookat, struct VEC& up)
+void setView(const VEC& campos, const VEC& lookat, const VEC& up)
 {
     View.camera(campos, lookat, up);
 }
@@ -512,5 +519,22 @@ void model(int vertexId, int indexId, int textureId, MAT& world)
     );
 }
 
+int VtxCylinder, IdxCylinder, TexCylinder;
+void createLine3D(float radius, int numCorners)
+{
+    VtxCylinder = createVtxCylinderAxisX(radius, numCorners, 0,1);
+    IdxCylinder = createIdxCylinder(numCorners);
+}
+void line3D(const VEC& p1, const VEC& p2)
+{
+    VEC v = p2 - p1;
+    World.identity();
+    World.mulScaling(v.mag(), 1, 1);
+    v.normalize();
+    World.mulRotateZ(acos(-v.y) - 3.141592f / 2);
+    World.mulRotateY(-atan2(v.z, v.x));
+    World.mulTranslate(p1.x, p1.y, p1.z);
+    model(VtxCylinder, IdxCylinder, 0, World);
+}
 
 

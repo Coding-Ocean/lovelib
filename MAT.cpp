@@ -85,7 +85,7 @@ void MAT::mulRotateY(float r) {
     _41 = tmp;
 }
 
-void MAT::camera(VEC& camPos, VEC& lookat, VEC& up) {
+void MAT::camera(const VEC& camPos, const VEC& lookat, const VEC& up) {
     //カメラのローカル軸座標を求める(正規直交ベクトル）
     VEC z = normalize(lookat-camPos);
     VEC x = normalize(cross(up, z));

@@ -80,3 +80,18 @@ void createWindow(const char* appName, int windowWidth, int windowHeight)
     //ウィンドウを表示する
     ShowWindow(hWnd, SW_SHOW);
 }
+bool CursorCounter=0;
+void hideCursor()
+{
+    if(CursorCounter>=0)
+        CursorCounter = ShowCursor(FALSE);
+}
+void showCursor()
+{
+    if (CursorCounter < 0)
+        int temp = ShowCursor(TRUE);
+}
+void destroyWindow()
+{
+    showCursor();
+}

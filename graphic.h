@@ -15,9 +15,10 @@ void ambient(float r, float g, float b);
 void fill(float r, float g, float b, float a = 1);
 //ライト
 void setLightDirection(float dx, float dy, float dz);
+void lightOn();
 void lightOff();
 //ビュー行列
-void setView(struct VEC& campos, struct VEC& lookat, struct VEC& up);
+void setView(const struct VEC& campos, const struct VEC& lookat, const struct VEC& up);
 //DirectXのオブジェクトバッファー
 int createVertexBuffer(struct VERTEX* vertices, int numVertices);
 int createIndexBuffer(unsigned short* indices, int numIndices);
@@ -32,3 +33,5 @@ int loadImage(const char* filename);
 void image(int idx, float px, float py, float rad=0, float scale=1, int order=0);
 //３Dモデル
 void model(int vertexId, int indexId, int textureId, struct MAT& world);
+void createLine3D(float radius=0.01f, int numCorners=4);
+void line3D(const VEC& p1, const VEC& p2);

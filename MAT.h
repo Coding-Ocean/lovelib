@@ -9,7 +9,7 @@ struct MAT : D3DMATRIX {
     void mulRotateZ(float r);
     void mulRotateX(float r);
     void mulRotateY(float r);
-    void camera(struct VEC&, struct VEC&, struct VEC&);
+    void camera(const struct VEC&, const struct VEC&, const struct VEC&);
     void setOrtho(float l, float r, float b, float t, float n, float f);
     void setOrtho(float w, float h);
     void setPers(float angle, float aspect, float n, float f);
