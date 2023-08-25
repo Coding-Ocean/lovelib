@@ -36,6 +36,9 @@ MAT Proj;
 std::vector<VERTEX_BUFFER> VertexBuffers;
 std::vector<INDEX_BUFFER> IndexBuffers;
 std::vector<TEXTURE> Textures;
+int VtxSquare=0;
+int VtxCircle=1;
+int TexNone=0;
 
 void createGraphic()
 {
@@ -71,11 +74,11 @@ void createGraphic()
 
     //テクスチャステージの初期設定
     {
-        //ポリゴンの色とテクスチャの色を乗算合成
+        //ポリゴンの色とテクスチャの色を乗算合成(ARG1*ARG2/255)
         Dev->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
         Dev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_DIFFUSE);
         Dev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_TEXTURE);
-        //ポリゴンのアルファとテクスチャのアルファを乗算合成
+        //ポリゴンのアルファとテクスチャのアルファを乗算合成(ARG1*ARG2/255)
         Dev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
         Dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
         Dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TEXTURE);
@@ -84,7 +87,7 @@ void createGraphic()
     //レンダーステートの初期設定
     {
         //ライティング系
-        Dev->LightEnable(0, TRUE);//スイッチオン・オフ
+        Dev->LightEnable(0, TRUE);//スイッチオン
         Dev->SetRenderState(D3DRS_AMBIENT, 0x000000);//暗い部分に環境光を照らす量
         Dev->SetRenderState(D3DRS_NORMALIZENORMALS, TRUE);//拡大縮小しても法線の長さを１にする
         //時計回りポリゴンを裏面とし、描画しない
@@ -134,37 +137,18 @@ void createGraphic()
 
     //頂点バッファ０：正方形
     {
-        const int numVertices = 4;
-        VERTEX vertices[numVertices] = {
-            { -0.5,  0.5, 0,  0,0,-1,  0,0 },//left top
-            { -0.5, -0.5, 0,  0,0,-1,  0,1 },//left bottom
-            {  0.5, -0.5, 0,  0,0,-1,  1,1 },//right bottom
-            {  0.5,  0.5, 0,  0,0,-1,  1,0 },//right top
-        };
-        createVertexBuffer(vertices, numVertices);
+        VtxSquare = createVtxSquare();
     }
 
     //頂点バッファ１：円
     {
-        std::vector<VERTEX> vertices;
-        int numVertices = 60;
-        float divAngle = 3.1415926f * 2 / (numVertices);
-        float radius = 0.5f;
-        VERTEX temp;
-        for (int i = 0; i < numVertices; i++) {
-            temp.x = cos(divAngle * i) * radius;
-            temp.y = sin(divAngle * i) * radius;
-            vertices.emplace_back(temp);
-        }
-        createVertexBuffer(vertices.data(), numVertices);
+        VtxCircle = createVtxCircle(0.5f, 48);
     }
 
-    //テクスチャ０：白い１×１のテクスチャ
+    //テクスチャ０：テクスチャ無し
     {
-        unsigned char rgba[] = { 
-            0xff,0xff,0xff,0xff,
-        };
-        createTexture(rgba, 1, 1, "whiteDot");
+        Textures.emplace_back(nullptr, 0, 0, "TexNone");
+        TexNone = 0;
     }
 }
 
@@ -236,10 +220,24 @@ void ambient(float r, float g, float b)
     Dev->SetRenderState(D3DRS_AMBIENT, ambient);
 }
 
-void fill(float r, float g, float b, float a)
+void notNormalizeNormals()
 {
-    Material.Diffuse = { r,g,b,a };
-    Material.Ambient = { r,g,b,a };
+    Dev->SetRenderState(D3DRS_NORMALIZENORMALS, FALSE);
+}
+
+void normalizeNormals()
+{
+    Dev->SetRenderState(D3DRS_NORMALIZENORMALS, TRUE);
+}
+
+void lightOn()
+{
+    Dev->LightEnable(0, TRUE);
+}
+
+void lightOff()
+{
+    Dev->LightEnable(0, FALSE);
 }
 
 void setLightDirection(float dx, float dy, float dz)
@@ -250,19 +248,10 @@ void setLightDirection(float dx, float dy, float dz)
     Light.Direction.z = dz / len;
 }
 
-void lightOn()
+void fill(float r, float g, float b, float a)
 {
-    Dev->LightEnable(0, TRUE);
-}
-void lightOff()
-{
-    Dev->LightEnable(0, FALSE);
-}
-
-
-void notNormalizeNormals()
-{
-    Dev->SetRenderState(D3DRS_NORMALIZENORMALS, FALSE);
+    Material.Diffuse = { r,g,b,a };
+    Material.Ambient = { r,g,b,a };
 }
 
 void setView(const VEC& campos, const VEC& lookat, const VEC& up)
@@ -383,7 +372,7 @@ void rect(float px, float py, float w, float h, float rad, int order)
     Dev->SetTexture(0, 0);
     //頂点
     Dev->SetFVF(VERTEX_FORMAT);
-    Dev->SetStreamSource(0, VertexBuffers[0].obj, 0, sizeof(VERTEX));
+    Dev->SetStreamSource(0, VertexBuffers[VtxSquare].obj, 0, sizeof(VERTEX));
     //描画（最後のパラメタは描画する三角形数）
     Dev->DrawPrimitive(D3DPT_TRIANGLEFAN, 0, 2);
 }
@@ -403,9 +392,35 @@ void circle(float px, float py, float diameter, int order)
     Dev->SetTexture(0, 0);
     //頂点
     Dev->SetFVF(VERTEX_FORMAT);
-    Dev->SetStreamSource(0, VertexBuffers[1].obj, 0, sizeof(VERTEX));
+    Dev->SetStreamSource(0, VertexBuffers[VtxCircle].obj, 0, sizeof(VERTEX));
     //描画（最後のパラメタは描画する三角形数）
-    Dev->DrawPrimitive(D3DPT_TRIANGLEFAN, 0, VertexBuffers[1].numVertices - 2);
+    Dev->DrawPrimitive(D3DPT_TRIANGLEFAN, 0, VertexBuffers[VtxCircle].numVertices - 2);
+}
+
+void line(float sx, float sy, float ex, float ey, float thickness, int order)
+{
+    //始点から終点までのベクトルと大きさ
+    float vx = ex - sx;
+    float vy = ey - sy;
+    float length = sqrt(vx * vx + vy * vy);
+    //行列（四角形の頂点を使って、線にするworld行列）
+    World2D.identity();
+    World2D.mulTranslate(0.5f, 0, 0);
+    World2D.mulScaling(length,thickness,1);
+    World2D.mulRotateZ(atan2(-vy,vx));
+    World2D.mulTranslate(sx, -sy, order / 1000.0f);
+    Dev->SetTransform(D3DTS_WORLD, &World2D);
+    Dev->SetTransform(D3DTS_VIEW, &View2D);
+    Dev->SetTransform(D3DTS_PROJECTION, &Proj2D);
+    //色
+    Dev->SetLight(0, &Light2D);
+    Dev->SetMaterial(&Material);
+    Dev->SetTexture(0, 0);
+    //頂点
+    Dev->SetFVF(VERTEX_FORMAT);
+    Dev->SetStreamSource(0, VertexBuffers[0].obj, 0, sizeof(VERTEX));
+    //描画（最後のパラメタは描画する三角形数）
+    Dev->DrawPrimitive(D3DPT_TRIANGLEFAN, 0, VertexBuffers[0].numVertices - 2);
 }
 
 int createShape(int numCorners, float ratio)
@@ -519,10 +534,10 @@ void model(int vertexId, int indexId, int textureId, MAT& world)
     );
 }
 
-int VtxCylinder, IdxCylinder, TexCylinder;
+int VtxAxisX, IdxCylinder;
 void createLine3D(float radius, int numCorners)
 {
-    VtxCylinder = createVtxCylinderAxisX(radius, numCorners, 0,1);
+    VtxAxisX = createVtxCylinderAxisX(radius, numCorners, 0,1);
     IdxCylinder = createIdxCylinder(numCorners);
 }
 void line3D(const VEC& p1, const VEC& p2)
@@ -534,7 +549,7 @@ void line3D(const VEC& p1, const VEC& p2)
     World.mulRotateZ(acos(-v.y) - 3.141592f / 2);
     World.mulRotateY(-atan2(v.z, v.x));
     World.mulTranslate(p1.x, p1.y, p1.z);
-    model(VtxCylinder, IdxCylinder, 0, World);
+    model(VtxAxisX, IdxCylinder, TexNone, World);
 }
 
 

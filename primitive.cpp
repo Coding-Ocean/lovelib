@@ -22,6 +22,19 @@ int createIdxSquare()
 	return createIndexBuffer(indices, _countof(indices));
 }
 
+int createVtxCircle(float radius, int numCorners)
+{
+	std::vector<VERTEX> vertices;
+	float divAngle = 3.1415926f * 2 / (numCorners);
+	VERTEX temp;
+	for (int i = 0; i < numCorners; i++) {
+		temp.x = cos(divAngle * i) * radius;
+		temp.y = sin(divAngle * i) * radius;
+		vertices.emplace_back(temp);
+	}
+	return createVertexBuffer(vertices.data(), numCorners);
+}
+
 int createVtxCube(float l)
 {
 	VERTEX vertices[] = {

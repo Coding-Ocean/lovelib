@@ -5,12 +5,14 @@ void destroyGraphic();
 void clear(float r, float g, float b);
 void present();
 //レンダーステート
-void wireframe();
-void solid();
+void ambient(float r, float g, float b);
+void normalizeNormals();
+void notNormalizeNormals();
 void cullnone();
 void cullcw();
 void cullccw();
-void ambient(float r, float g, float b);
+void wireframe();
+void solid();
 //マテリアル
 void fill(float r, float g, float b, float a = 1);
 //ライト
@@ -26,12 +28,14 @@ int createTexture(unsigned char* pixels, int texWidth, int texHeight, const char
 //２D（テクスチャ無し）
 void rect(float px, float py, float w, float h, float rad = 0, int order = 0);
 void circle(float px, float py, float diameter, int order = 0);
+void line(float sx, float sy, float ex, float ey, float thickness = 1, int order = 0);
 int createShape(int numCorners, float ratio = 1);
 void shape(int vertexId, float px, float py, float w, float h, float rad = 0, int order = 0);
 //２D（テクスチャ有り）
 int loadImage(const char* filename);
 void image(int idx, float px, float py, float rad=0, float scale=1, int order=0);
 //３Dモデル
+extern int TexNone;
 void model(int vertexId, int indexId, int textureId, struct MAT& world);
 void createLine3D(float radius=0.01f, int numCorners=4);
 void line3D(const VEC& p1, const VEC& p2);
