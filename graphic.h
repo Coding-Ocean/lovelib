@@ -5,20 +5,22 @@ void destroyGraphic();
 void clear(float r, float g, float b);
 void present();
 //レンダーステート
-void ambient(float r, float g, float b);
-void normalizeNormals();
-void notNormalizeNormals();
 void cullnone();
 void cullcw();
 void cullccw();
-void wireframe();
+void normalizeNormals();
+void notNormalizeNormals();
+void writeDepth();
+void notWriteDepth();
 void solid();
-//マテリアル
-void fill(float r, float g, float b, float a = 1);
+void wireframe();
 //ライト
-void setLightDirection(float dx, float dy, float dz);
 void lightOn();
 void lightOff();
+void lightDirection(float dx, float dy, float dz);
+void lightAmbient(float r, float g, float b);
+//マテリアル
+void fill(float r, float g, float b, float a = 1);
 //ビュー行列
 void setView(const struct VEC& campos, const struct VEC& lookat, const struct VEC& up);
 //DirectXのオブジェクトバッファー

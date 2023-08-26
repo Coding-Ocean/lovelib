@@ -74,11 +74,11 @@ void createGraphic()
 
     //テクスチャステージの初期設定
     {
-        //ポリゴンの色とテクスチャの色を乗算合成(ARG1*ARG2/255)
+        //ポリゴンの色とテクスチャの色を乗算合成
         Dev->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
         Dev->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_DIFFUSE);
         Dev->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_TEXTURE);
-        //ポリゴンのアルファとテクスチャのアルファを乗算合成(ARG1*ARG2/255)
+        //ポリゴンのアルファとテクスチャのアルファを乗算合成
         Dev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
         Dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
         Dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TEXTURE);
@@ -86,10 +86,8 @@ void createGraphic()
 
     //レンダーステートの初期設定
     {
-        //ライティング系
-        Dev->LightEnable(0, TRUE);//スイッチオン
-        Dev->SetRenderState(D3DRS_AMBIENT, 0x000000);//暗い部分に環境光を照らす量
-        Dev->SetRenderState(D3DRS_NORMALIZENORMALS, TRUE);//拡大縮小しても法線の長さを１にする
+        //拡大縮小しても法線の長さを１にする
+        Dev->SetRenderState(D3DRS_NORMALIZENORMALS, TRUE);
         //時計回りポリゴンを裏面とし、描画しない
         Dev->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
         //深度バッファに深度を書き込む
@@ -100,25 +98,26 @@ void createGraphic()
         Dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
     }
 
-    //以下グローバル変数の初期値設定--------------------------------------------
-    //マテリアル
-    {
-        Material.Diffuse = { 1,1,1,1 };
-        Material.Ambient = { 1,1,1,1 };
-    }
+    //ライトスイッチオン
+    Dev->LightEnable(0, TRUE);
 
     //3D用ライト
     {
         Light.Type = D3DLIGHT_DIRECTIONAL;
         Light.Direction = { 0,0,1 };
         Light.Diffuse = { 1,1,1,1 };
+        Light.Ambient = { 0,0,0,0 };
     }
 
-    //2D用ライト
+    //2D用ライト(3D用ライトと同じ。変更しない。)
     {
-        Light2D.Type = D3DLIGHT_DIRECTIONAL;
-        Light2D.Direction = { 0,0,1 };
-        Light2D.Diffuse = { 1,1,1,1 };
+        Light2D = Light;
+    }
+
+    //マテリアル
+    {
+        Material.Diffuse = { 1,1,1,1 };
+        Material.Ambient = { 1,1,1,1 };
     }
 
     //行列
@@ -186,48 +185,44 @@ void present()
     Dev->Present(NULL, NULL, NULL, NULL);
 }
 
-void wireframe()
+void cullnone()
 {
-    Dev->SetRenderState(D3DRS_FILLMODE, D3DFILL_WIREFRAME);
+    Dev->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
+}
+void cullcw()
+{
+    Dev->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
+}
+void cullccw()
+{
+    Dev->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
+}
+
+void normalizeNormals()
+{
+    Dev->SetRenderState(D3DRS_NORMALIZENORMALS, TRUE);
+}
+void notNormalizeNormals()
+{
+    Dev->SetRenderState(D3DRS_NORMALIZENORMALS, FALSE);
+}
+
+void writeDepth()
+{
+    Dev->SetRenderState(D3DRS_ZENABLE, TRUE);
+}
+void notWriteDepth()
+{
+    Dev->SetRenderState(D3DRS_ZENABLE, FALSE);
 }
 
 void solid()
 {
     Dev->SetRenderState(D3DRS_FILLMODE, D3DFILL_SOLID);
 }
-
-void cullnone()
+void wireframe()
 {
-    Dev->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
-}
-
-void cullcw()
-{
-    Dev->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
-}
-
-void cullccw()
-{
-    Dev->SetRenderState(D3DRS_CULLMODE, D3DCULL_CCW);
-}
-
-void ambient(float r, float g, float b)
-{
-    unsigned ambient =
-        unsigned(r * 255) << 16 |
-        unsigned(g * 255) << 8 |
-        unsigned(b * 255);
-    Dev->SetRenderState(D3DRS_AMBIENT, ambient);
-}
-
-void notNormalizeNormals()
-{
-    Dev->SetRenderState(D3DRS_NORMALIZENORMALS, FALSE);
-}
-
-void normalizeNormals()
-{
-    Dev->SetRenderState(D3DRS_NORMALIZENORMALS, TRUE);
+    Dev->SetRenderState(D3DRS_FILLMODE, D3DFILL_WIREFRAME);
 }
 
 void lightOn()
@@ -240,12 +235,19 @@ void lightOff()
     Dev->LightEnable(0, FALSE);
 }
 
-void setLightDirection(float dx, float dy, float dz)
+void lightDirection(float dx, float dy, float dz)
 {
     float len = sqrt(dx * dx + dy * dy + dz * dz);
     Light.Direction.x = dx / len;
     Light.Direction.y = dy / len;
     Light.Direction.z = dz / len;
+}
+
+void lightAmbient(float r, float g, float b)
+{
+    Light.Ambient.r = r;
+    Light.Ambient.g = g;
+    Light.Ambient.b = b;
 }
 
 void fill(float r, float g, float b, float a)
