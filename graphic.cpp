@@ -86,10 +86,10 @@ void createGraphic()
 
     //レンダーステートの初期設定
     {
-        //拡大縮小しても法線の長さを１にする
-        Dev->SetRenderState(D3DRS_NORMALIZENORMALS, TRUE);
         //時計回りポリゴンを裏面とし、描画しない
         Dev->SetRenderState(D3DRS_CULLMODE, D3DCULL_CW);
+        //拡大縮小しても法線の長さを１にする
+        Dev->SetRenderState(D3DRS_NORMALIZENORMALS, TRUE);
         //深度バッファに深度を書き込む
         Dev->SetRenderState(D3DRS_ZENABLE, TRUE);
         //半透明の合成方法
