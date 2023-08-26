@@ -12,6 +12,8 @@ void normalizeNormals();
 void notNormalizeNormals();
 void writeDepth();
 void notWriteDepth();
+void specularOn();
+void specularOff();
 void solid();
 void wireframe();
 //ƒ‰ƒCƒg

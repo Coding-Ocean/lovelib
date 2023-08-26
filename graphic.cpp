@@ -107,6 +107,7 @@ void createGraphic()
         Light.Direction = { 0,0,1 };
         Light.Diffuse = { 1,1,1,1 };
         Light.Ambient = { 0,0,0,0 };
+        Light.Specular = { 0.5f,0.5f,0.5f,0.5f };
     }
 
     //2D用ライト(3D用ライトと同じ。変更しない。)
@@ -118,6 +119,8 @@ void createGraphic()
     {
         Material.Diffuse = { 1,1,1,1 };
         Material.Ambient = { 1,1,1,1 };
+        Material.Specular = { 1,1,1,1 };
+        Material.Power = 40;
     }
 
     //行列
@@ -214,6 +217,15 @@ void writeDepth()
 void notWriteDepth()
 {
     Dev->SetRenderState(D3DRS_ZENABLE, FALSE);
+}
+
+void specularOn()
+{
+    Dev->SetRenderState(D3DRS_SPECULARENABLE, TRUE);
+}
+void specularOff()
+{
+    Dev->SetRenderState(D3DRS_SPECULARENABLE, TRUE);
 }
 
 void solid()
