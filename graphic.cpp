@@ -112,7 +112,9 @@ void createGraphic()
 
     //2D用ライト(3D用ライトと同じ。変更しない。)
     {
-        Light2D = Light;
+        Light2D.Type = D3DLIGHT_DIRECTIONAL;
+        Light2D.Direction = { 0,0,1 };
+        Light2D.Diffuse = { 1,1,1,1 };
     }
 
     //マテリアル
@@ -225,7 +227,7 @@ void specularOn()
 }
 void specularOff()
 {
-    Dev->SetRenderState(D3DRS_SPECULARENABLE, TRUE);
+    Dev->SetRenderState(D3DRS_SPECULARENABLE, FALSE);
 }
 
 void solid()
@@ -512,7 +514,7 @@ void image(int idx, float px, float py, float rad, float scale, int order)
     World2D.identity();
     World2D.mulScaling((float)Textures[idx].width * scale, (float)Textures[idx].height * scale, 1.0f);
     World2D.mulRotateZ(-rad);
-    World2D.mulTranslate(px, -py, order/1000.0f);
+    World2D.mulTranslate(px, -py, order / 1000.0f);
     Dev->SetTransform(D3DTS_WORLD, &World2D);
     Dev->SetTransform(D3DTS_VIEW, &View2D);
     Dev->SetTransform(D3DTS_PROJECTION, &Proj2D);
