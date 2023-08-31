@@ -5,4 +5,5 @@
 #include "MAT.h"
 #include "VEC.h"
 #include "primitive.h"
+#include "input.h"
 void window(const char* appName, int width, int height);

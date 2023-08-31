@@ -28,7 +28,7 @@ MAT Proj2D;
 
 //3D
 D3DLIGHT9 Light;
-MAT World;
+static MAT World;
 MAT View;
 MAT Proj;
 
