@@ -60,6 +60,38 @@ void createGraphic()
         d3dpp.BackBufferFormat = D3DFMT_X8R8G8B8;
         d3dpp.EnableAutoDepthStencil = true;
         d3dpp.AutoDepthStencilFormat = D3DFMT_D24S8;
+
+        //アンチエイリアシング
+        DWORD qualityBackBuffer = 0;
+        DWORD qualityZBuffer = 0;
+        for (DWORD m = (DWORD)D3DMULTISAMPLE_16_SAMPLES; m > 0; m--)
+        {
+            //レンダーターゲットでアンチエイリアシングがサポートされているかをチェック
+            hr = D3D->CheckDeviceMultiSampleType(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL,
+                d3dpp.BackBufferFormat, d3dpp.Windowed, (D3DMULTISAMPLE_TYPE)m,
+                &qualityBackBuffer
+            );
+            if (FAILED(hr))continue;
+
+            //深度ステンシルでアンチエイリアシングがサポートされているかをチェック
+            hr = D3D->CheckDeviceMultiSampleType(D3DADAPTER_DEFAULT, D3DDEVTYPE_HAL,
+                d3dpp.AutoDepthStencilFormat, d3dpp.Windowed, (D3DMULTISAMPLE_TYPE)m,
+                &qualityZBuffer
+            );
+            if (FAILED(hr))continue;
+
+            //アンチエイリアシングが使用できるのでD3DPRESENT_PARAMETERSにタイプをセットする。
+            d3dpp.MultiSampleType = (D3DMULTISAMPLE_TYPE)m;
+
+            //QualityBackBufferとQualityZBufferで小さい方の値を有効にする。どんなパターンで値が返るのかわからんので、こうしたほうが安全かと。
+            if (qualityBackBuffer < qualityZBuffer)
+                d3dpp.MultiSampleQuality = qualityBackBuffer - 1;
+            else
+                d3dpp.MultiSampleQuality = qualityZBuffer - 1;
+
+            break;
+        }
+
         //バックバッファとデプスバッファをつくる
         hr = D3D->CreateDevice(
             D3DADAPTER_DEFAULT,
@@ -96,6 +128,8 @@ void createGraphic()
         Dev->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
         Dev->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
         Dev->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
+        //アンチエイリアシング有効
+        Dev->SetRenderState(D3DRS_MULTISAMPLEANTIALIAS, TRUE);
     }
 
     //ライトスイッチオン
