@@ -15,19 +15,19 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
-IDirect3D9* D3D;
-IDirect3DDevice9* Dev;
+IDirect3D9* D3D{};
+IDirect3DDevice9* Dev{};
 
-D3DMATERIAL9 Material;
+D3DMATERIAL9 Material{};
 
 //2D
-D3DLIGHT9 Light2D;
+D3DLIGHT9 Light2D{};
 MAT World2D;
 MAT View2D;
 MAT Proj2D;
 
 //3D
-D3DLIGHT9 Light;
+D3DLIGHT9 Light{};
 static MAT World;
 MAT View;
 MAT Proj;
@@ -36,9 +36,9 @@ MAT Proj;
 std::vector<VERTEX_BUFFER> VertexBuffers;
 std::vector<INDEX_BUFFER> IndexBuffers;
 std::vector<TEXTURE> Textures;
-int VtxSquare=0;
-int VtxCircle=1;
-int TexNone=0;
+int VtxSquare{};
+int VtxCircle{};
+int TexNone{};
 
 void createGraphic()
 {
@@ -146,7 +146,7 @@ void createGraphic()
 
     //頂点バッファ１：円
     {
-        VtxCircle = createVtxCircle(0.5f, 48);
+        VtxCircle = createVtxCircle(0.5f, 60);
     }
 
     //テクスチャ０：テクスチャ無し

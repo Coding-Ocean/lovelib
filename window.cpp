@@ -2,9 +2,9 @@
 #include"common.h"
 #include"window.h"
 
-static float Width;
-static float Height;
-static int CursorCounter = 0;
+static float Width{};
+static float Height{};
+static int MouseWheel{};
 
 //メッセージ処理
 LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wp, LPARAM lp)
@@ -13,6 +13,9 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wp, LPARAM lp)
     case WM_DESTROY:
         PostQuitMessage(0);
         return 0;
+    case WM_MOUSEWHEEL:
+        MouseWheel = GET_WHEEL_DELTA_WPARAM(wp) / WHEEL_DELTA;
+        return 0;
     default:
         return DefWindowProc(hWnd, uMsg, wp, lp);
     }
@@ -20,6 +23,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wp, LPARAM lp)
 //メッセージ送出（を隠す関数）
 bool quit()
 {
+    MouseWheel = 0;
+
     MSG msg;
     while (PeekMessage(&msg, 0, 0, 0, PM_REMOVE)) {
         DispatchMessage(&msg); //この関数が（ＯＳ経由で） WndProc()を呼び出す
@@ -32,32 +37,25 @@ void closeWindow()
     HWND hWnd = FindWindow("GameWindow", NULL);
     PostMessage(hWnd, WM_CLOSE, 0, 0);
 }
-
+//ウィンドウの幅
 float getWidth()
 {
     return Width;
 }
-
+//ウィンドウの高さ
 float getHeight()
 {
     return Height;
+}
+//マウスホイール
+int getMouseWheel()
+{
+    return MouseWheel;
 }
 //エスケープキーが押されているか
 bool escKeyPressed()
 {
     return GetAsyncKeyState(VK_ESCAPE) & 0x8000;
-}
-//マウスカーソルを隠す
-void hideCursor()
-{
-    if(CursorCounter>=0)
-        CursorCounter = ShowCursor(FALSE);
-}
-//マウスカーソルを表示する
-void showCursor()
-{
-    if (CursorCounter < 0)
-        CursorCounter = ShowCursor(TRUE);
 }
 //ウィンドウをつくる
 void createWindow(const char* appName, int windowWidth, int windowHeight)
@@ -119,5 +117,4 @@ void createWindow(const char* appName, int windowWidth, int windowHeight)
 //lovelib.cppでgmain()終了後に呼び出す。
 void destroyWindow()
 {
-    showCursor();
 }
