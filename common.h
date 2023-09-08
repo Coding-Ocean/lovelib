@@ -1,7 +1,6 @@
 #pragma once
 
 #ifdef _DEBUG
-#include<windows.h>
 #define WARNING(flag,msg1,msg2)\
   { if(flag){\
       char buf[ 512 ];\

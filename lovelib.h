@@ -6,4 +6,8 @@
 #include "VEC.h"
 #include "primitive.h"
 #include "input.h"
-void window(const char* appName, int width, int height);
+
+#define width getWidth()
+#define height getHeight()
+
+void window(const char* appName, int windowWidth, int windowHeight);

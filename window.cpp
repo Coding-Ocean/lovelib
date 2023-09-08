@@ -1,6 +1,12 @@
 #include<windows.h>
 #include"common.h"
 #include"window.h"
+
+static float Width;
+static float Height;
+static int CursorCounter = 0;
+
+//メッセージ処理
 LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wp, LPARAM lp)
 {
     switch (uMsg) {
@@ -11,6 +17,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wp, LPARAM lp)
         return DefWindowProc(hWnd, uMsg, wp, lp);
     }
 }
+//メッセージ送出（を隠す関数）
 bool quit()
 {
     MSG msg;
@@ -19,17 +26,46 @@ bool quit()
     }
     return msg.message == WM_QUIT;
 }
-bool escKeyPressed()
-{
-    return GetAsyncKeyState(VK_ESCAPE) & 0x8000;
-}
+//ウィンドウを閉じるメッセージを出す
 void closeWindow()
 {
     HWND hWnd = FindWindow("GameWindow", NULL);
     PostMessage(hWnd, WM_CLOSE, 0, 0);
 }
+
+float getWidth()
+{
+    return Width;
+}
+
+float getHeight()
+{
+    return Height;
+}
+//エスケープキーが押されているか
+bool escKeyPressed()
+{
+    return GetAsyncKeyState(VK_ESCAPE) & 0x8000;
+}
+//マウスカーソルを隠す
+void hideCursor()
+{
+    if(CursorCounter>=0)
+        CursorCounter = ShowCursor(FALSE);
+}
+//マウスカーソルを表示する
+void showCursor()
+{
+    if (CursorCounter < 0)
+        CursorCounter = ShowCursor(TRUE);
+}
+//ウィンドウをつくる
 void createWindow(const char* appName, int windowWidth, int windowHeight)
 {
+    //ウィンドウの大きさを取っておく
+    Width = (float)windowWidth;
+    Height = (float)windowHeight;
+
     //「ウィンドウクラス構造体」の値を設定して、ウィンドウクラスを登録する
     HINSTANCE hInstance = GetModuleHandle(NULL);
     HBRUSH hBrush = (HBRUSH)GetStockObject(BLACK_BRUSH);
@@ -80,17 +116,7 @@ void createWindow(const char* appName, int windowWidth, int windowHeight)
     //ウィンドウを表示する
     ShowWindow(hWnd, SW_SHOW);
 }
-bool CursorCounter=0;
-void hideCursor()
-{
-    if(CursorCounter>=0)
-        CursorCounter = ShowCursor(FALSE);
-}
-void showCursor()
-{
-    if (CursorCounter < 0)
-        int temp = ShowCursor(TRUE);
-}
+//lovelib.cppでgmain()終了後に呼び出す。
 void destroyWindow()
 {
     showCursor();

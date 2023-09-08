@@ -1,8 +1,14 @@
 #pragma once
+
 bool quit();
-bool escKeyPressed();
 void closeWindow();
-void createWindow(const char* appName, int windowWidth, int windowHeight);
+bool escKeyPressed();
 void hideCursor();
+void showCursor();
+
+void createWindow(const char* appName, int windowWidth, int windowHeight);
 void destroyWindow();
+
+float getWidth();
+float getHeight();
 
