@@ -473,6 +473,25 @@ void line(float sx, float sy, float ex, float ey, float thickness, int order)
     Dev->DrawPrimitive(D3DPT_TRIANGLEFAN, 0, VertexBuffers[0].numVertices - 2);
 }
 
+void arrow(float sx, float sy, float ex, float ey, float thickness, float size, int order) {
+    if (sx == ex && sy == ey)return;
+    float ang = atan2(ey - sy, ex - sx);
+    float c = cos(ang);
+    float s = sin(ang);
+    float sizeY = size / 3;
+    float ax, ay;
+    //線
+    line(sx, sy, ex, ey, thickness, order);
+    //矢印１
+    ax = -size * c + sizeY * -s;
+    ay = -size * s + sizeY * c;
+    line(ex, ey, ex + ax, ey + ay, thickness, order);
+    //矢印２
+    ax = -size * c + -sizeY * -s;
+    ay = -size * s + -sizeY * c;
+    line(ex, ey, ex + ax, ey + ay, thickness, order);
+}
+
 int createShape(int numCorners, float ratio)
 {
     //TRIANGLEFAN設定で描画するための頂点バッファをつくる

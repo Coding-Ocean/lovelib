@@ -33,6 +33,7 @@ int createTexture(unsigned char* pixels, int texWidth, int texHeight, const char
 void rect(float px, float py, float w, float h, float rad = 0, int order = 0);
 void circle(float px, float py, float diameter, int order = 0);
 void line(float sx, float sy, float ex, float ey, float thickness = 1, int order = 0);
+void arrow(float sx, float sy, float ex, float ey, float thickness = 1, float size = 15, int order = 0);;
 int createShape(int numCorners, float ratio = 1);
 void shape(int vertexId, float px, float py, float w, float h, float rad = 0, int order = 0);
 //２D（テクスチャ有り）
