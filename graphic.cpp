@@ -490,6 +490,7 @@ void arrow(float sx, float sy, float ex, float ey, float thickness, float size, 
     ax = -size * c + -sizeY * -s;
     ay = -size * s + -sizeY * c;
     line(ex, ey, ex + ax, ey + ay, thickness, order);
+    circle(ex, ey, thickness, order);
 }
 
 int createShape(int numCorners, float ratio)

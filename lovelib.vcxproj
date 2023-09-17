@@ -135,6 +135,7 @@
     <ClCompile Include="input.cpp" />
     <ClCompile Include="lovelib.cpp" />
     <ClCompile Include="MAT.cpp" />
+    <ClCompile Include="mathGraphic.cpp" />
     <ClCompile Include="primitive.cpp" />
     <ClCompile Include="VEC.cpp" />
     <ClCompile Include="window.cpp" />
@@ -146,6 +147,7 @@
     <ClInclude Include="input.h" />
     <ClInclude Include="lovelib.h" />
     <ClInclude Include="MAT.h" />
+    <ClInclude Include="mathGraphic.h" />
     <ClInclude Include="primitive.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="TEXTURE.h" />

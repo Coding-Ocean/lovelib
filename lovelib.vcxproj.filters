@@ -14,6 +14,7 @@
       <Filter>container</Filter>
     </ClCompile>
     <ClCompile Include="input.cpp" />
+    <ClCompile Include="mathGraphic.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="window.h" />
@@ -45,6 +46,7 @@
       <Filter>container</Filter>
     </ClInclude>
     <ClInclude Include="input.h" />
+    <ClInclude Include="mathGraphic.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="math">
