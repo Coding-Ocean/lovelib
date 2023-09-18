@@ -622,4 +622,113 @@ void line3D(const VEC& p1, const VEC& p2)
     model(VtxAxisX, IdxCylinder, TexNone, World);
 }
 
+int createFont(const char* c, int fontsize)
+{
+    // フォントの生成
+    LOGFONT lf = { fontsize, 0, 0, 0, 0, 0, 0, 0, SHIFTJIS_CHARSET, OUT_TT_ONLY_PRECIS,
+    CLIP_DEFAULT_PRECIS, PROOF_QUALITY, FIXED_PITCH | FF_MODERN, "ＭＳ ゴシック" };
+    HFONT hFont = CreateFontIndirect(&lf);
+    WARNING(!hFont, "Font", "Create error");
+
+    // デバイスコンテキスト取得
+    // デバイスにフォントを持たせないとGetGlyphOutline関数はエラーとなる
+    HDC hdc = GetDC(NULL);
+    HFONT oldFont = (HFONT)SelectObject(hdc, hFont);
+
+    // 文字コード
+    UINT code = 0;
+    // 1バイト文字のコードは1バイト目のUINT変換、
+    // 2バイト文字xのコードは[先導コード]*256 + [文字コード]です
+    if (IsDBCSLeadByte(*c))
+        code = (BYTE)c[0] << 8 | (BYTE)c[1];
+    else
+        code = c[0];
+
+    // フォントビットマップ取得
+    TEXTMETRIC TM;
+    GetTextMetrics(hdc, &TM);
+    GLYPHMETRICS GM;
+    CONST MAT2 Mat = { {0,1},{0,0},{0,0},{0,1} };
+    DWORD size = GetGlyphOutline(hdc, code, GGO_GRAY4_BITMAP, &GM, 0, NULL, &Mat);
+    BYTE* ptr = new BYTE[size];
+    GetGlyphOutline(hdc, code, GGO_GRAY4_BITMAP, &GM, size, ptr, &Mat);
+
+    // デバイスコンテキストとフォントハンドルの開放
+    SelectObject(hdc, oldFont);
+    DeleteObject(hFont);
+    ReleaseDC(NULL, hdc);
+
+    //テクスチャオブジェクトをつくる
+    IDirect3DTexture9* obj = 0;
+    HRESULT hr;
+    hr = Dev->CreateTexture(GM.gmCellIncX, TM.tmHeight, 1,
+        0/*USAGE*/, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED,
+        &obj, NULL
+    );
+    WARNING(FAILED(hr), "Texture", "Create error");
+
+    //半角全角スペースは左下に線が入るのでテクスチャにコピーしない
+    if (code == 0x20 || code == 0x8140) {
+        //テクスチャ配列へ追加
+        Textures.emplace_back(obj, GM.gmCellIncX, TM.tmHeight, c);
+
+        //テクスチャ番号を返す
+        return (int)Textures.size() - 1;
+    }
+
+    //テクスチャオブジェクトにフォント画像をコピー
+    D3DLOCKED_RECT lockRect;
+    hr = obj->LockRect(0, &lockRect, NULL, D3DLOCK_DISCARD);
+    WARNING(FAILED(hr), "Texture", "Lock error");
+    // フォント情報の書き込み
+    // ofsX, ofsY : 書き出し位置(左上)
+    int ofsX = GM.gmptGlyphOrigin.x;
+    int ofsY = TM.tmAscent - GM.gmptGlyphOrigin.y;
+
+    DWORD pitch = GM.gmBlackBoxX + (4 - (GM.gmBlackBoxX % 4)) % 4;
+    pitch = (GM.gmBlackBoxX + 3) & 0xfffc;
+    // Level : α値の段階 (GGO_GRAY4_BITMAPなので17段階)
+    int Level = 17;
+    unsigned int x, y;
+    DWORD Alpha, Color;
+    //FillMemory(lockRect.pBits, lockRect.Pitch * TM.tmHeight, 0);
+
+        int srcY = 0, distY = 0;
+        for (y = 0; y < GM.gmBlackBoxY; y++) {
+            srcY = y * pitch;
+            distY = (ofsY + y) * lockRect.Pitch;
+            for (x = 0; x < GM.gmBlackBoxX; x++) {
+                Alpha = ptr[x + y*pitch] * 255 / (Level - 1);
+                Color = 0xffffff | (Alpha << 24);
+                memcpy((BYTE*)lockRect.pBits + distY + 4 * (ofsX + x), &Color, sizeof(DWORD));
+            }
+        }
+    obj->UnlockRect(0);
+    delete[] ptr;
+
+    //テクスチャ配列へ追加
+    Textures.emplace_back(obj, GM.gmCellIncX, TM.tmHeight, c);
+
+    //テクスチャ番号を返す
+    return (int)Textures.size() - 1;
+}
+
+/*
+DWORD iBmp_w = gm.gmBlackBoxX;
+DWORD iBmp_h = gm.gmBlackBoxY;
+DWORD x, y;
+DWORD Alpha, Color;
+for (y = 0; y < iBmp_h; y++) {
+    for (x = 0; x < iBmp_w; x++) {
+        Alpha = pMono[x + iBmp_w * y] * 255 / grad;
+        if (code == 0x20 || code == 0x3000)//半角全角スペースは左下に線が入るので、Colorを0にする
+            Color = 0x0;
+        else
+            Color = 0x00ffffff | (Alpha << 24);
+        memcpy((BYTE*)pData + mapped.RowPitch * y + 4 * x, &Color, sizeof(DWORD));
+    }
+}
+*/
+
+
 
