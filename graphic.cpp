@@ -1,6 +1,8 @@
 #pragma comment(lib, "d3d9.lib")
 
 #include <d3d9.h>
+#include <map>
+#include <unordered_map>
 #include <vector>
 #include <cmath>
 #include "common.h"
@@ -622,11 +624,69 @@ void line3D(const VEC& p1, const VEC& p2)
     model(VtxAxisX, IdxCylinder, TexNone, World);
 }
 
-int createFont(const char* c, int fontsize)
+
+//------------------------------------------------------------------------
+struct CURRENT_FONT {
+    std::string name;
+    int id;
+};
+CURRENT_FONT CurrentFont;
+std::unordered_map<std::string, int> FontIdMap;
+int FontIdCnt = -1;
+void fontFace(const char* fontname) 
+{
+    auto itr = FontIdMap.find(fontname);
+    if (itr != FontIdMap.end()) {
+        CurrentFont.name = fontname;
+        CurrentFont.id = itr->second;
+    }
+    else {
+        FontIdCnt++;
+        FontIdMap[fontname] = FontIdCnt;
+        CurrentFont.name = fontname;
+        CurrentFont.id = FontIdCnt;
+    }
+}
+
+static int FontSize=100;
+void fontSize(int size)
+{
+    FontSize = size;
+}
+
+
+class KEY {
+public:
+    int fontId;
+    int fontSize;
+    unsigned code;
+
+    bool operator<(const KEY& key) const {
+        bool b;
+        if (this->fontId < key.fontId)
+            b = true;
+        else if (this->fontId > key.fontId)
+            b = false;
+        else if (this->fontSize < key.fontSize)
+            b = true;
+        else if (this->fontSize > key.fontSize)
+            b = false;
+        else if (this->code < key.code)
+            b = true;
+        else
+            b = false;
+
+        return b;
+    }
+};
+std::map<KEY, TEXTURE> FontMap;
+
+TEXTURE* createFont(KEY& key)
 {
     // フォントの生成
-    LOGFONT lf = { fontsize, 0, 0, 0, 0, 0, 0, 0, SHIFTJIS_CHARSET, OUT_TT_ONLY_PRECIS,
-    CLIP_DEFAULT_PRECIS, PROOF_QUALITY, FIXED_PITCH | FF_MODERN, "ＭＳ ゴシック" };
+    LOGFONT lf = { FontSize, 0, 0, 0, 0, 0, 0, 0, SHIFTJIS_CHARSET, OUT_TT_ONLY_PRECIS,
+    CLIP_DEFAULT_PRECIS, PROOF_QUALITY, FIXED_PITCH | FF_MODERN };
+    strcpy_s(lf.lfFaceName, CurrentFont.name.c_str());
     HFONT hFont = CreateFontIndirect(&lf);
     WARNING(!hFont, "Font", "Create error");
 
@@ -635,23 +695,14 @@ int createFont(const char* c, int fontsize)
     HDC hdc = GetDC(NULL);
     HFONT oldFont = (HFONT)SelectObject(hdc, hFont);
 
-    // 文字コード
-    UINT code = 0;
-    // 1バイト文字のコードは1バイト目のUINT変換、
-    // 2バイト文字xのコードは[先導コード]*256 + [文字コード]です
-    if (IsDBCSLeadByte(*c))
-        code = (BYTE)c[0] << 8 | (BYTE)c[1];
-    else
-        code = c[0];
-
     // フォントビットマップ取得
-    TEXTMETRIC TM;
-    GetTextMetrics(hdc, &TM);
-    GLYPHMETRICS GM;
-    CONST MAT2 Mat = { {0,1},{0,0},{0,0},{0,1} };
-    DWORD size = GetGlyphOutline(hdc, code, GGO_GRAY4_BITMAP, &GM, 0, NULL, &Mat);
-    BYTE* ptr = new BYTE[size];
-    GetGlyphOutline(hdc, code, GGO_GRAY4_BITMAP, &GM, size, ptr, &Mat);
+    TEXTMETRIC tm;
+    GetTextMetrics(hdc, &tm);
+    GLYPHMETRICS gm;
+    CONST MAT2 mat = { {0,1},{0,0},{0,0},{0,1} };
+    DWORD size = GetGlyphOutline(hdc, key.code, GGO_GRAY4_BITMAP, &gm, 0, NULL, &mat);
+    BYTE* fontPixels = new BYTE[size];
+    GetGlyphOutline(hdc, key.code, GGO_GRAY4_BITMAP, &gm, size, fontPixels, &mat);
 
     // デバイスコンテキストとフォントハンドルの開放
     SelectObject(hdc, oldFont);
@@ -661,58 +712,131 @@ int createFont(const char* c, int fontsize)
     //テクスチャオブジェクトをつくる
     IDirect3DTexture9* obj = 0;
     HRESULT hr;
-    hr = Dev->CreateTexture(GM.gmCellIncX, TM.tmHeight, 1,
+    hr = Dev->CreateTexture(gm.gmCellIncX, tm.tmHeight, 1,
         0/*USAGE*/, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED,
         &obj, NULL
     );
     WARNING(FAILED(hr), "Texture", "Create error");
 
-    //半角全角スペースは左下に線が入るのでテクスチャにコピーしない
-    if (code == 0x20 || code == 0x8140) {
-        //テクスチャ配列へ追加
-        Textures.emplace_back(obj, GM.gmCellIncX, TM.tmHeight, c);
-
-        //テクスチャ番号を返す
-        return (int)Textures.size() - 1;
+    //半角全角スペースは左下に点があるのでテクスチャにコピーしない
+    if (key.code == 0x20 || key.code == 0x8140) {
+        delete[] fontPixels;
+        FontMap[key] = TEXTURE(obj, gm.gmCellIncX, tm.tmHeight, "");
+        return &FontMap[key];
     }
 
-    //テクスチャオブジェクトにフォント画像をコピー
-    D3DLOCKED_RECT lockRect;
-    hr = obj->LockRect(0, &lockRect, NULL, D3DLOCK_DISCARD);
+    //コピーの前にテクスチャオブジェクトをロックする
+    D3DLOCKED_RECT lockedRect;
+    hr = obj->LockRect(0, &lockedRect, NULL, D3DLOCK_DISCARD);
     WARNING(FAILED(hr), "Texture", "Lock error");
-    // フォント情報の書き込み
-    // ofsX, ofsY : 書き出し位置(左上)
-    int ofsX = GM.gmptGlyphOrigin.x;
-    int ofsY = TM.tmAscent - GM.gmptGlyphOrigin.y;
-
-    DWORD pitch = GM.gmBlackBoxX + (4 - (GM.gmBlackBoxX % 4)) % 4;
-    pitch = (GM.gmBlackBoxX + 3) & 0xfffc;
-    // Level : α値の段階 (GGO_GRAY4_BITMAPなので17段階)
-    int Level = 17;
+    //フォント画像のピッチ(横幅は４の倍数になっているのでそうする)
+    unsigned pitch = (gm.gmBlackBoxX + 3) & 0xfffc;
+    //コピー先の書き出し位置(左上)//ofsX, ofsY
+    unsigned ofsX = gm.gmptGlyphOrigin.x;
+    unsigned ofsY = tm.tmAscent - gm.gmptGlyphOrigin.y;
+    //α値の段階 (GGO_GRAY4_BITMAPなので17段階)
+    unsigned level = 17 - 1;
+    //テクスチャオブジェクトにフォント画像をコピー
+    unsigned alpha, color;
+    unsigned srcY = 0, distY = 0;
     unsigned int x, y;
-    DWORD Alpha, Color;
-    //FillMemory(lockRect.pBits, lockRect.Pitch * TM.tmHeight, 0);
-
-        int srcY = 0, distY = 0;
-        for (y = 0; y < GM.gmBlackBoxY; y++) {
-            srcY = y * pitch;
-            distY = (ofsY + y) * lockRect.Pitch;
-            for (x = 0; x < GM.gmBlackBoxX; x++) {
-                Alpha = ptr[x + y*pitch] * 255 / (Level - 1);
-                Color = 0xffffff | (Alpha << 24);
-                memcpy((BYTE*)lockRect.pBits + distY + 4 * (ofsX + x), &Color, sizeof(DWORD));
-            }
+    for (y = 0; y < gm.gmBlackBoxY; y++) {
+        srcY = y * pitch;
+        distY = (ofsY + y) * lockedRect.Pitch / 4 + ofsX;
+        for (x = 0; x < gm.gmBlackBoxX; x++) {
+            alpha = *(fontPixels + srcY + x) * 255 / level;
+            color = 0xffffff | (alpha << 24);
+            memcpy((DWORD*)lockedRect.pBits + distY + x, &color, sizeof(DWORD) );
         }
+    }
     obj->UnlockRect(0);
-    delete[] ptr;
-
-    //テクスチャ配列へ追加
-    Textures.emplace_back(obj, GM.gmCellIncX, TM.tmHeight, c);
-
-    //テクスチャ番号を返す
-    return (int)Textures.size() - 1;
+    delete[] fontPixels;
+    FontMap[key] = TEXTURE(obj, gm.gmCellIncX, tm.tmHeight, "");
+    return &FontMap[key];
 }
 
+float PrintX, PrintY,PrintInitX=10;
+void printInit()
+{
+    PrintY = 5;
+}
+void print(const char* format, ...)
+{
+    float PrintX = PrintInitX;
+
+    KEY key;
+    key.fontId = CurrentFont.id;
+    key.fontSize = FontSize;
+
+    va_list args;
+    va_start(args, format);
+    char str[256];
+    vsprintf_s(str, format, args);
+    va_end(args);
+    int len = (int)strlen(str);
+
+    for (int i = 0; i < len; i++) {
+        //文字コード
+        if (IsDBCSLeadByte(str[i])) {
+            //2バイト文字のコードは[先導コード]*256 + [文字コード]です
+            key.code = (BYTE)str[i] << 8 | (BYTE)str[i + 1];
+            i++;
+        }
+        else {
+            //1バイト文字のコードは1バイト目のUINT変換、
+            key.code = str[i];
+        }
+
+        //keyでテクスチャを探します
+        TEXTURE* tex=0;
+        auto itr = FontMap.find(key);
+        if (itr != FontMap.end()) {
+            tex = &itr->second;
+        }
+        else {
+            tex = createFont(key);
+        }
+
+        //行列
+        World2D.identity();
+        World2D.mulTranslate(0.5f, -0.5f, 0);
+        World2D.mulScaling((float)tex->width, (float)tex->height, 1.0f);
+        World2D.mulTranslate(PrintX, -PrintY, 0);
+        Dev->SetTransform(D3DTS_WORLD, &World2D);
+        Dev->SetTransform(D3DTS_VIEW, &View2D);
+        Dev->SetTransform(D3DTS_PROJECTION, &Proj2D);
+        //色
+        Dev->SetLight(0, &Light2D);
+        Dev->SetMaterial(&Material);
+        Dev->SetTexture(0, tex->obj);
+        //頂点
+        Dev->SetFVF(VERTEX_FORMAT);
+        Dev->SetStreamSource(0, VertexBuffers[0].obj, 0, sizeof(VERTEX));
+        //描画
+        Dev->DrawPrimitive(D3DPT_TRIANGLEFAN, 0, 2);
+        
+        PrintX += tex->width;
+    }
+
+    PrintY += FontSize;
+}
+
+//void print(const char* format, ...)
+//{
+//    va_list args;
+//    va_start(args, format);
+//    char buf[256];
+//    vsprintf_s(buf, format, args);
+//    va_end(args);
+//    print_(buf);
+//}
+
+void destroyFontMap()
+{
+    for (auto& pair : FontMap) {
+        SAFE_RELEASE(pair.second.obj);
+    }
+}
 /*
 DWORD iBmp_w = gm.gmBlackBoxX;
 DWORD iBmp_h = gm.gmBlackBoxY;
