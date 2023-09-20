@@ -627,23 +627,25 @@ void line3D(const VEC& p1, const VEC& p2)
 
 //------------------------------------------------------------------------
 struct CURRENT_FONT {
-    std::string name;
-    int id;
-};
-CURRENT_FONT CurrentFont;
-std::unordered_map<std::string, int> FontIdMap;
-int FontIdCnt = -1;
-void fontFace(const char* fontname) 
+    std::string name="ＭＳ ゴシック";
+    unsigned char charset=SHIFTJIS_CHARSET;
+    int id=0;
+}CurrentFont;
+std::unordered_map<std::string, int> FontIdMap{ {CurrentFont.name, 0} };
+int FontIdCnt = 0;
+void fontFace(const char* fontname, unsigned char charset)
 {
+    CurrentFont.name = fontname;
+    CurrentFont.charset = charset;
+
+    //CurrentFont.idをセットする
     auto itr = FontIdMap.find(fontname);
     if (itr != FontIdMap.end()) {
-        CurrentFont.name = fontname;
         CurrentFont.id = itr->second;
     }
     else {
         FontIdCnt++;
         FontIdMap[fontname] = FontIdCnt;
-        CurrentFont.name = fontname;
         CurrentFont.id = FontIdCnt;
     }
 }
@@ -661,30 +663,30 @@ public:
     int fontSize;
     unsigned code;
 
-    bool operator<(const KEY& key) const {
-        bool b;
-        if (this->fontId < key.fontId)
-            b = true;
-        else if (this->fontId > key.fontId)
-            b = false;
-        else if (this->fontSize < key.fontSize)
-            b = true;
-        else if (this->fontSize > key.fontSize)
-            b = false;
-        else if (this->code < key.code)
-            b = true;
-        else
-            b = false;
+    //bool operator<(const KEY& key) const {
+    //    bool b;
+    //    if (this->fontId < key.fontId)
+    //        b = true;
+    //    else if (this->fontId > key.fontId)
+    //        b = false;
+    //    else if (this->fontSize < key.fontSize)
+    //        b = true;
+    //    else if (this->fontSize > key.fontSize)
+    //        b = false;
+    //    else if (this->code < key.code)
+    //        b = true;
+    //    else
+    //        b = false;
 
-        return b;
-    }
+    //    return b;
+    //}
 };
-std::map<KEY, TEXTURE> FontMap;
+std::unordered_map<KEY, TEXTURE> FontMap;
 
 TEXTURE* createFont(KEY& key)
 {
     // フォントの生成
-    LOGFONT lf = { FontSize, 0, 0, 0, 0, 0, 0, 0, SHIFTJIS_CHARSET, OUT_TT_ONLY_PRECIS,
+    LOGFONT lf = { FontSize, 0, 0, 0, 0, 0, 0, 0, CurrentFont.charset, OUT_TT_ONLY_PRECIS,
     CLIP_DEFAULT_PRECIS, PROOF_QUALITY, FIXED_PITCH | FF_MODERN };
     strcpy_s(lf.lfFaceName, CurrentFont.name.c_str());
     HFONT hFont = CreateFontIndirect(&lf);
@@ -821,6 +823,56 @@ void print(const char* format, ...)
     PrintY += FontSize;
 }
 
+void text(const char* str, float x, float y)
+{
+    KEY key;
+    key.fontId = CurrentFont.id;
+    key.fontSize = FontSize;
+    int len = (int)strlen(str);
+    for (int i = 0; i < len; i++) {
+        //文字コード
+        if (IsDBCSLeadByte(str[i])) {
+            //2バイト文字のコードは[先導コード]*256 + [文字コード]です
+            key.code = (BYTE)str[i] << 8 | (BYTE)str[i + 1];
+            i++;
+        }
+        else {
+            //1バイト文字のコードは1バイト目のUINT変換、
+            key.code = str[i];
+        }
+
+        //keyでテクスチャを探します
+        TEXTURE* tex = 0;
+        auto itr = FontMap.find(key);
+        if (itr != FontMap.end()) {
+            tex = &itr->second;
+        }
+        else {
+            tex = createFont(key);
+        }
+
+        //行列
+        World2D.identity();
+        World2D.mulTranslate(0.5f, -0.5f, 0);
+        World2D.mulScaling((float)tex->width, (float)tex->height, 1.0f);
+        World2D.mulTranslate(x, -y, 0);
+        Dev->SetTransform(D3DTS_WORLD, &World2D);
+        Dev->SetTransform(D3DTS_VIEW, &View2D);
+        Dev->SetTransform(D3DTS_PROJECTION, &Proj2D);
+        //色
+        Dev->SetLight(0, &Light2D);
+        Dev->SetMaterial(&Material);
+        Dev->SetTexture(0, tex->obj);
+        //頂点
+        Dev->SetFVF(VERTEX_FORMAT);
+        Dev->SetStreamSource(0, VertexBuffers[0].obj, 0, sizeof(VERTEX));
+        //描画
+        Dev->DrawPrimitive(D3DPT_TRIANGLEFAN, 0, 2);
+
+        x += tex->width;
+    }
+}
+
 //void print(const char* format, ...)
 //{
 //    va_list args;
@@ -837,22 +889,6 @@ void destroyFontMap()
         SAFE_RELEASE(pair.second.obj);
     }
 }
-/*
-DWORD iBmp_w = gm.gmBlackBoxX;
-DWORD iBmp_h = gm.gmBlackBoxY;
-DWORD x, y;
-DWORD Alpha, Color;
-for (y = 0; y < iBmp_h; y++) {
-    for (x = 0; x < iBmp_w; x++) {
-        Alpha = pMono[x + iBmp_w * y] * 255 / grad;
-        if (code == 0x20 || code == 0x3000)//半角全角スペースは左下に線が入るので、Colorを0にする
-            Color = 0x0;
-        else
-            Color = 0x00ffffff | (Alpha << 24);
-        memcpy((BYTE*)pData + mapped.RowPitch * y + 4 * x, &Color, sizeof(DWORD));
-    }
-}
-*/
 
 
 
