@@ -7,6 +7,7 @@
 #include "primitive.h"
 #include "input.h"
 #include "mathGraphic.h"
+#include "USER_FONT.h"
 
 #define width getWidth()
 #define height getHeight()

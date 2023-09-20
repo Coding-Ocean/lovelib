@@ -194,6 +194,8 @@ void createGraphic()
 
 void destroyGraphic()
 {
+    destroyFontTextures();
+
     for (size_t i = 0; i < VertexBuffers.size(); i++) {
         SAFE_RELEASE(VertexBuffers[i].obj);
     }
@@ -218,6 +220,7 @@ void clear(float r, float g, float b)
         0
     );
     Dev->BeginScene();
+    printInit();
 }
 
 void present()
@@ -626,69 +629,44 @@ void line3D(const VEC& p1, const VEC& p2)
 
 
 //------------------------------------------------------------------------
-struct CURRENT_FONT {
-    std::string name="ＭＳ ゴシック";
-    unsigned char charset=SHIFTJIS_CHARSET;
-    int id=0;
-}CurrentFont;
-std::unordered_map<std::string, int> FontIdMap{ {CurrentFont.name, 0} };
-int FontIdCnt = 0;
-void fontFace(const char* fontname, unsigned char charset)
+struct CURRENT_FONT_FACE {
+    std::string name = "ＭＳ ゴシック";
+    unsigned charset = SHIFTJIS_CHARSET;
+    int id = 0;
+};
+static CURRENT_FONT_FACE CurFontFace;
+static std::unordered_map<std::string, int> FontIdMap{ {CurFontFace.name, 0} };
+static int FontIdCnt = 0;
+void fontFace(const char* fontname, unsigned charset)
 {
-    CurrentFont.name = fontname;
-    CurrentFont.charset = charset;
+    CurFontFace.name = fontname;
+    CurFontFace.charset = charset;
 
-    //CurrentFont.idをセットする
+    //CurFontFace.idをセットする
     auto itr = FontIdMap.find(fontname);
     if (itr != FontIdMap.end()) {
-        CurrentFont.id = itr->second;
+        CurFontFace.id = itr->second;
     }
     else {
         FontIdCnt++;
         FontIdMap[fontname] = FontIdCnt;
-        CurrentFont.id = FontIdCnt;
+        CurFontFace.id = FontIdCnt;
     }
 }
 
-static int FontSize=100;
+static int FontSize=50;
 void fontSize(int size)
 {
     FontSize = size;
 }
 
-
-class KEY {
-public:
-    int fontId;
-    int fontSize;
-    unsigned code;
-
-    //bool operator<(const KEY& key) const {
-    //    bool b;
-    //    if (this->fontId < key.fontId)
-    //        b = true;
-    //    else if (this->fontId > key.fontId)
-    //        b = false;
-    //    else if (this->fontSize < key.fontSize)
-    //        b = true;
-    //    else if (this->fontSize > key.fontSize)
-    //        b = false;
-    //    else if (this->code < key.code)
-    //        b = true;
-    //    else
-    //        b = false;
-
-    //    return b;
-    //}
-};
-std::unordered_map<KEY, TEXTURE> FontMap;
-
-TEXTURE* createFont(KEY& key)
+static std::unordered_map<unsigned __int64, TEXTURE> FontTextureMap;
+TEXTURE* createFontTexture(unsigned __int64 key)
 {
     // フォントの生成
-    LOGFONT lf = { FontSize, 0, 0, 0, 0, 0, 0, 0, CurrentFont.charset, OUT_TT_ONLY_PRECIS,
-    CLIP_DEFAULT_PRECIS, PROOF_QUALITY, FIXED_PITCH | FF_MODERN };
-    strcpy_s(lf.lfFaceName, CurrentFont.name.c_str());
+    LOGFONT lf = { FontSize, 0, 0, 0, 0, 0, 0, 0, CurFontFace.charset, 
+    OUT_TT_ONLY_PRECIS, CLIP_DEFAULT_PRECIS, PROOF_QUALITY, FIXED_PITCH | FF_MODERN };
+    strcpy_s(lf.lfFaceName, CurFontFace.name.c_str());
     HFONT hFont = CreateFontIndirect(&lf);
     WARNING(!hFont, "Font", "Create error");
 
@@ -702,9 +680,10 @@ TEXTURE* createFont(KEY& key)
     GetTextMetrics(hdc, &tm);
     GLYPHMETRICS gm;
     CONST MAT2 mat = { {0,1},{0,0},{0,0},{0,1} };
-    DWORD size = GetGlyphOutline(hdc, key.code, GGO_GRAY4_BITMAP, &gm, 0, NULL, &mat);
+    UINT code = key & 0xffff;
+    DWORD size = GetGlyphOutline(hdc, code, GGO_GRAY4_BITMAP, &gm, 0, NULL, &mat);
     BYTE* fontPixels = new BYTE[size];
-    GetGlyphOutline(hdc, key.code, GGO_GRAY4_BITMAP, &gm, size, fontPixels, &mat);
+    GetGlyphOutline(hdc, code, GGO_GRAY4_BITMAP, &gm, size, fontPixels, &mat);
 
     // デバイスコンテキストとフォントハンドルの開放
     SelectObject(hdc, oldFont);
@@ -721,10 +700,10 @@ TEXTURE* createFont(KEY& key)
     WARNING(FAILED(hr), "Texture", "Create error");
 
     //半角全角スペースは左下に点があるのでテクスチャにコピーしない
-    if (key.code == 0x20 || key.code == 0x8140) {
+    if (code == 0x20 || code == 0x8140) {
         delete[] fontPixels;
-        FontMap[key] = TEXTURE(obj, gm.gmCellIncX, tm.tmHeight, "");
-        return &FontMap[key];
+        FontTextureMap[key] = TEXTURE(obj, gm.gmCellIncX, tm.tmHeight, "");
+        return &FontTextureMap[key];
     }
 
     //コピーの前にテクスチャオブジェクトをロックする
@@ -753,102 +732,41 @@ TEXTURE* createFont(KEY& key)
     }
     obj->UnlockRect(0);
     delete[] fontPixels;
-    FontMap[key] = TEXTURE(obj, gm.gmCellIncX, tm.tmHeight, "");
-    return &FontMap[key];
-}
-
-float PrintX, PrintY,PrintInitX=10;
-void printInit()
-{
-    PrintY = 5;
-}
-void print(const char* format, ...)
-{
-    float PrintX = PrintInitX;
-
-    KEY key;
-    key.fontId = CurrentFont.id;
-    key.fontSize = FontSize;
-
-    va_list args;
-    va_start(args, format);
-    char str[256];
-    vsprintf_s(str, format, args);
-    va_end(args);
-    int len = (int)strlen(str);
-
-    for (int i = 0; i < len; i++) {
-        //文字コード
-        if (IsDBCSLeadByte(str[i])) {
-            //2バイト文字のコードは[先導コード]*256 + [文字コード]です
-            key.code = (BYTE)str[i] << 8 | (BYTE)str[i + 1];
-            i++;
-        }
-        else {
-            //1バイト文字のコードは1バイト目のUINT変換、
-            key.code = str[i];
-        }
-
-        //keyでテクスチャを探します
-        TEXTURE* tex=0;
-        auto itr = FontMap.find(key);
-        if (itr != FontMap.end()) {
-            tex = &itr->second;
-        }
-        else {
-            tex = createFont(key);
-        }
-
-        //行列
-        World2D.identity();
-        World2D.mulTranslate(0.5f, -0.5f, 0);
-        World2D.mulScaling((float)tex->width, (float)tex->height, 1.0f);
-        World2D.mulTranslate(PrintX, -PrintY, 0);
-        Dev->SetTransform(D3DTS_WORLD, &World2D);
-        Dev->SetTransform(D3DTS_VIEW, &View2D);
-        Dev->SetTransform(D3DTS_PROJECTION, &Proj2D);
-        //色
-        Dev->SetLight(0, &Light2D);
-        Dev->SetMaterial(&Material);
-        Dev->SetTexture(0, tex->obj);
-        //頂点
-        Dev->SetFVF(VERTEX_FORMAT);
-        Dev->SetStreamSource(0, VertexBuffers[0].obj, 0, sizeof(VERTEX));
-        //描画
-        Dev->DrawPrimitive(D3DPT_TRIANGLEFAN, 0, 2);
-        
-        PrintX += tex->width;
-    }
-
-    PrintY += FontSize;
+    FontTextureMap[key] = TEXTURE(obj, gm.gmCellIncX, tm.tmHeight, "");
+    return &FontTextureMap[key];
 }
 
 void text(const char* str, float x, float y)
 {
-    KEY key;
-    key.fontId = CurrentFont.id;
-    key.fontSize = FontSize;
     int len = (int)strlen(str);
     for (int i = 0; i < len; i++) {
         //文字コード
+        unsigned short code;
         if (IsDBCSLeadByte(str[i])) {
             //2バイト文字のコードは[先導コード]*256 + [文字コード]です
-            key.code = (BYTE)str[i] << 8 | (BYTE)str[i + 1];
+            code = (BYTE)str[i] << 8 | (BYTE)str[i + 1];
             i++;
         }
         else {
             //1バイト文字のコードは1バイト目のUINT変換、
-            key.code = str[i];
+            code = str[i];
         }
 
-        //keyでテクスチャを探します
+        //keyをつくる
+        unsigned __int64 key =
+            (unsigned __int64)CurFontFace.id << 32 |
+            (unsigned __int64)FontSize << 16 |
+            code;
+        //keyでmapのテクスチャを探す
         TEXTURE* tex = 0;
-        auto itr = FontMap.find(key);
-        if (itr != FontMap.end()) {
+        auto itr = FontTextureMap.find(key);
+        if (itr != FontTextureMap.end()) {
+            //あった
             tex = &itr->second;
         }
         else {
-            tex = createFont(key);
+            //なかったのでつくる
+            tex = createFontTexture(key);
         }
 
         //行列
@@ -865,7 +783,7 @@ void text(const char* str, float x, float y)
         Dev->SetTexture(0, tex->obj);
         //頂点
         Dev->SetFVF(VERTEX_FORMAT);
-        Dev->SetStreamSource(0, VertexBuffers[0].obj, 0, sizeof(VERTEX));
+        Dev->SetStreamSource(0, VertexBuffers[VtxSquare].obj, 0, sizeof(VERTEX));
         //描画
         Dev->DrawPrimitive(D3DPT_TRIANGLEFAN, 0, 2);
 
@@ -873,19 +791,27 @@ void text(const char* str, float x, float y)
     }
 }
 
-//void print(const char* format, ...)
-//{
-//    va_list args;
-//    va_start(args, format);
-//    char buf[256];
-//    vsprintf_s(buf, format, args);
-//    va_end(args);
-//    print_(buf);
-//}
-
-void destroyFontMap()
+static float PrintY = 0;
+void printInit()
 {
-    for (auto& pair : FontMap) {
+    PrintY = 10;
+}
+void print(const char* format, ...)
+{
+    va_list args;
+    va_start(args, format);
+    char str[256];
+    vsprintf_s(str, format, args);
+    va_end(args);
+
+    float printX = 10;
+    text(str, printX, PrintY);
+    PrintY += FontSize;
+}
+
+void destroyFontTextures()
+{
+    for (auto& pair : FontTextureMap) {
         SAFE_RELEASE(pair.second.obj);
     }
 }

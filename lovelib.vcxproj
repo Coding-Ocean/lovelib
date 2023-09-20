@@ -137,6 +137,7 @@
     <ClCompile Include="MAT.cpp" />
     <ClCompile Include="mathGraphic.cpp" />
     <ClCompile Include="primitive.cpp" />
+    <ClCompile Include="USER_FONT.cpp" />
     <ClCompile Include="VEC.cpp" />
     <ClCompile Include="window.cpp" />
   </ItemGroup>
@@ -151,6 +152,7 @@
     <ClInclude Include="primitive.h" />
     <ClInclude Include="stb_image.h" />
     <ClInclude Include="TEXTURE.h" />
+    <ClInclude Include="USER_FONT.h" />
     <ClInclude Include="VEC.h" />
     <ClInclude Include="VERTEX.h" />
     <ClInclude Include="VERTEX_BUFFER.h" />

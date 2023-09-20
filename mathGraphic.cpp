@@ -21,22 +21,22 @@ void mathAxis(float ox, float oy, float scl, float thickness, int order)
 	//Œ´“_‚©‚çnumŒÂ‚Ìƒƒ‚ƒŠ‚ğ•`‚­
 	float l = thickness * 5;
 	int num, i;
-	num = (getWidth() - ox) / scl;
+	num = int((getWidth() - ox) / scl);
 	for (i = 1; i <= num; i++) {
 		float x = ox + scl * i;
 		line(x, oy - l, x, oy + l, thickness, order);
 	}
-	num = ox / scl;
+	num = int(ox / scl);
 	for (i = 1; i <= num; i++) {
 		float x = ox + scl * -i;
 		line(x, oy - l, x, oy + l, thickness, order);
 	}
-	num = (getHeight() - oy) / scl;
+	num = int((getHeight() - oy) / scl);
 	for (i = 1; i <= num; i++) {
 		float y = oy + scl * i;
 		line(ox - l, y, ox + l, y, thickness, order);
 	}
-	num = oy / scl;
+	num = int(oy / scl);
 	for (i = 1; i <= num; i++) {
 		float y = oy + scl * -i;
 		line(ox - l, y, ox + l, y, thickness, order);

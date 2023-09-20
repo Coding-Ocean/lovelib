@@ -15,6 +15,7 @@
     </ClCompile>
     <ClCompile Include="input.cpp" />
     <ClCompile Include="mathGraphic.cpp" />
+    <ClCompile Include="USER_FONT.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="window.h" />
@@ -47,6 +48,7 @@
     </ClInclude>
     <ClInclude Include="input.h" />
     <ClInclude Include="mathGraphic.h" />
+    <ClInclude Include="USER_FONT.h" />
   </ItemGroup>
   <ItemGroup>
     <Filter Include="math">
