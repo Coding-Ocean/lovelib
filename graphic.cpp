@@ -660,8 +660,41 @@ void fontSize(int size)
     FontSize = size;
 }
 
-static std::unordered_map<unsigned __int64, TEXTURE> FontTextureMap;
-TEXTURE* createFontTexture(unsigned __int64 key)
+struct FONT_TEXTURE {
+    struct IDirect3DTexture9* obj;
+    int width;
+    int height;
+    int texWidth;
+    int texHeight;
+    int ofstX;
+    int ofstY;
+    FONT_TEXTURE()
+        : obj(nullptr)
+        , width(0)
+        , height(0)
+        , texWidth(0)
+        , texHeight(0)
+        , ofstX(0)
+        , ofstY(0)
+    {
+    }
+    FONT_TEXTURE(struct IDirect3DTexture9* obj, 
+        int width, int height,
+        int texWidth, int texHeight,
+        int ofstX, int ofstY)
+        : obj(obj)
+        , width(width)
+        , height(height)
+        , texWidth(texWidth)
+        , texHeight(texHeight)
+        , ofstX(ofstX)
+        , ofstY(ofstY)
+    {
+    }
+};
+
+static std::unordered_map<unsigned __int64, FONT_TEXTURE> FontTextureMap;
+FONT_TEXTURE* createFontTexture(unsigned __int64 key)
 {
     //フォントの生成
     LOGFONT lf = { FontSize, 0, 0, 0, 0, 0, 0, 0, CurFontFace.charset, 
@@ -693,7 +726,9 @@ TEXTURE* createFontTexture(unsigned __int64 key)
     //テクスチャオブジェクトをつくる
     IDirect3DTexture9* obj = 0;
     HRESULT hr;
-    hr = Dev->CreateTexture(gm.gmCellIncX, tm.tmHeight, 1,
+    int texWidth = (gm.gmBlackBoxX + 3) / 4 * 4;
+    int texHeight = gm.gmBlackBoxY;
+    hr = Dev->CreateTexture(texWidth,texHeight, 1,
         0/*USAGE*/, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED,
         &obj, NULL
     );
@@ -702,36 +737,33 @@ TEXTURE* createFontTexture(unsigned __int64 key)
     //半角全角スペースは左下に点があるのでテクスチャにコピーしない
     if (code == 0x20 || code == 0x8140) {
         delete[] fontBuf;
-        FontTextureMap[key] = TEXTURE(obj, gm.gmCellIncX, tm.tmHeight, "");
+        FontTextureMap[key] = FONT_TEXTURE(obj,
+            gm.gmCellIncX, tm.tmHeight,
+            texWidth, texHeight,
+            gm.gmptGlyphOrigin.x, gm.gmptGlyphOrigin.y
+        );
         return &FontTextureMap[key];
     }
 
-    //コピーの前にテクスチャオブジェクトをロックする
-    D3DLOCKED_RECT lockedRect;
-    hr = obj->LockRect(0, &lockedRect, NULL, D3DLOCK_DISCARD);
-    WARNING(FAILED(hr), "Texture", "Lock error");
-    //コピー先のアドレス
-    DWORD* texBuf = (DWORD*)lockedRect.pBits;
-    //コピー先の書き出し位置(左上)//ofsX, ofsY
-    unsigned ofsX = gm.gmptGlyphOrigin.x;
-    unsigned ofsY = tm.tmAscent - gm.gmptGlyphOrigin.y;
-    //フォント画像のピッチ(横幅は４の倍数になっているのでそうする)
-    unsigned pitch = (gm.gmBlackBoxX + 3) & 0xfffc;
+    // テクスチャにフォントビットマップ情報を書き込み
     //α値の段階 (GGO_GRAY4_BITMAPなので17段階)
     unsigned level = 17 - 1;
-    //テクスチャオブジェクトにフォント画像をコピー
-    unsigned x, y, srcY, distY, alpha;
-    for (y = 0; y < gm.gmBlackBoxY; y++) {
-        srcY = y * pitch;
-        distY = (ofsY + y) * lockedRect.Pitch / 4 + ofsX;
-        for (x = 0; x < gm.gmBlackBoxX; x++) {
-            alpha = fontBuf[srcY + x] * 255 / level;
-            texBuf[distY + x] =  (alpha << 24) | 0xffffff;
+    D3DLOCKED_RECT lockedRect;
+    obj->LockRect(0, &lockedRect, NULL, 0);  // ロック
+    DWORD* texBuf = (DWORD*)lockedRect.pBits;   // テクスチャメモリへのポインタ
+    for (int y = 0; y < texHeight; y++) {
+        for (int x = 0; x < texWidth; x++) {
+            DWORD alpha = fontBuf[y * texWidth + x] * 255 / level;
+            texBuf[y * texWidth + x] = (alpha << 24) | 0x00ffffff;
         }
     }
     obj->UnlockRect(0);
     delete[] fontBuf;
-    FontTextureMap[key] = TEXTURE(obj, gm.gmCellIncX, tm.tmHeight, "");
+    FontTextureMap[key] = FONT_TEXTURE(obj, 
+        gm.gmCellIncX, tm.tmHeight,
+        texWidth, texHeight, 
+        gm.gmptGlyphOrigin.x, gm.gmptGlyphOrigin.y
+    );
     return &FontTextureMap[key];
 }
 
@@ -757,7 +789,7 @@ void text(const char* str, float x, float y)
             (unsigned __int64)FontSize << 16 |
             code;
         //keyでmap内にテクスチャがあるか探す
-        TEXTURE* tex = 0;
+        FONT_TEXTURE* tex = 0;
         auto itr = FontTextureMap.find(key);
         if (itr != FontTextureMap.end()) {
             //あった
@@ -771,8 +803,8 @@ void text(const char* str, float x, float y)
         //行列
         World2D.identity();
         World2D.mulTranslate(0.5f, -0.5f, 0);
-        World2D.mulScaling((float)tex->width, (float)tex->height, 1.0f);
-        World2D.mulTranslate(x, -y, 0);
+        World2D.mulScaling((float)tex->texWidth, (float)tex->texHeight, 1.0f);
+        World2D.mulTranslate(tex->ofstX+x+0.5f, tex->ofstY-y-tex->height+0.5f, 0);
         Dev->SetTransform(D3DTS_WORLD, &World2D);
         Dev->SetTransform(D3DTS_VIEW, &View2D);
         Dev->SetTransform(D3DTS_PROJECTION, &Proj2D);
@@ -793,7 +825,7 @@ void text(const char* str, float x, float y)
 static float PrintY = 0;
 void printInit()
 {
-    PrintY = 10;
+    PrintY = 0;
 }
 void print(const char* format, ...)
 {
@@ -803,7 +835,7 @@ void print(const char* format, ...)
     vsprintf_s(str, format, args);
     va_end(args);
 
-    float printX = 10;
+    float printX = 20;
     text(str, printX, PrintY);
     PrintY += FontSize;
 }
