@@ -631,7 +631,7 @@ void line3D(const VEC& p1, const VEC& p2)
 //------------------------------------------------------------------------
 struct CURRENT_FONT_FACE {
     std::string name = "ＭＳ ゴシック";
-    unsigned charset = SHIFTJIS_CHARSET;
+    unsigned char charset = SHIFTJIS_CHARSET;
     int id = 0;
 };
 static CURRENT_FONT_FACE CurFontFace;
@@ -663,29 +663,29 @@ void fontSize(int size)
 static std::unordered_map<unsigned __int64, TEXTURE> FontTextureMap;
 TEXTURE* createFontTexture(unsigned __int64 key)
 {
-    // フォントの生成
+    //フォントの生成
     LOGFONT lf = { FontSize, 0, 0, 0, 0, 0, 0, 0, CurFontFace.charset, 
     OUT_TT_ONLY_PRECIS, CLIP_DEFAULT_PRECIS, PROOF_QUALITY, FIXED_PITCH | FF_MODERN };
     strcpy_s(lf.lfFaceName, CurFontFace.name.c_str());
     HFONT hFont = CreateFontIndirect(&lf);
     WARNING(!hFont, "Font", "Create error");
 
-    // デバイスコンテキスト取得
-    // デバイスにフォントを持たせないとGetGlyphOutline関数はエラーとなる
+    //デバイスコンテキスト取得
     HDC hdc = GetDC(NULL);
+    //デバイスコンテキストにフォントを設定
     HFONT oldFont = (HFONT)SelectObject(hdc, hFont);
 
-    // フォントビットマップ取得
+    //フォントビットマップ取得
     TEXTMETRIC tm;
     GetTextMetrics(hdc, &tm);
     GLYPHMETRICS gm;
     CONST MAT2 mat = { {0,1},{0,0},{0,0},{0,1} };
     UINT code = key & 0xffff;
     DWORD size = GetGlyphOutline(hdc, code, GGO_GRAY4_BITMAP, &gm, 0, NULL, &mat);
-    BYTE* fontPixels = new BYTE[size];
-    GetGlyphOutline(hdc, code, GGO_GRAY4_BITMAP, &gm, size, fontPixels, &mat);
+    BYTE* fontBuf = new BYTE[size];
+    GetGlyphOutline(hdc, code, GGO_GRAY4_BITMAP, &gm, size, fontBuf, &mat);
 
-    // デバイスコンテキストとフォントハンドルの開放
+    //デバイスコンテキストとフォントハンドルの開放
     SelectObject(hdc, oldFont);
     DeleteObject(hFont);
     ReleaseDC(NULL, hdc);
@@ -701,7 +701,7 @@ TEXTURE* createFontTexture(unsigned __int64 key)
 
     //半角全角スペースは左下に点があるのでテクスチャにコピーしない
     if (code == 0x20 || code == 0x8140) {
-        delete[] fontPixels;
+        delete[] fontBuf;
         FontTextureMap[key] = TEXTURE(obj, gm.gmCellIncX, tm.tmHeight, "");
         return &FontTextureMap[key];
     }
@@ -710,28 +710,27 @@ TEXTURE* createFontTexture(unsigned __int64 key)
     D3DLOCKED_RECT lockedRect;
     hr = obj->LockRect(0, &lockedRect, NULL, D3DLOCK_DISCARD);
     WARNING(FAILED(hr), "Texture", "Lock error");
-    //フォント画像のピッチ(横幅は４の倍数になっているのでそうする)
-    unsigned pitch = (gm.gmBlackBoxX + 3) & 0xfffc;
+    //コピー先のアドレス
+    DWORD* texBuf = (DWORD*)lockedRect.pBits;
     //コピー先の書き出し位置(左上)//ofsX, ofsY
     unsigned ofsX = gm.gmptGlyphOrigin.x;
     unsigned ofsY = tm.tmAscent - gm.gmptGlyphOrigin.y;
+    //フォント画像のピッチ(横幅は４の倍数になっているのでそうする)
+    unsigned pitch = (gm.gmBlackBoxX + 3) & 0xfffc;
     //α値の段階 (GGO_GRAY4_BITMAPなので17段階)
     unsigned level = 17 - 1;
     //テクスチャオブジェクトにフォント画像をコピー
-    unsigned alpha, color;
-    unsigned srcY = 0, distY = 0;
-    unsigned int x, y;
+    unsigned x, y, srcY, distY, alpha;
     for (y = 0; y < gm.gmBlackBoxY; y++) {
         srcY = y * pitch;
         distY = (ofsY + y) * lockedRect.Pitch / 4 + ofsX;
         for (x = 0; x < gm.gmBlackBoxX; x++) {
-            alpha = *(fontPixels + srcY + x) * 255 / level;
-            color = 0xffffff | (alpha << 24);
-            memcpy((DWORD*)lockedRect.pBits + distY + x, &color, sizeof(DWORD) );
+            alpha = fontBuf[srcY + x] * 255 / level;
+            texBuf[distY + x] =  (alpha << 24) | 0xffffff;
         }
     }
     obj->UnlockRect(0);
-    delete[] fontPixels;
+    delete[] fontBuf;
     FontTextureMap[key] = TEXTURE(obj, gm.gmCellIncX, tm.tmHeight, "");
     return &FontTextureMap[key];
 }
@@ -743,12 +742,12 @@ void text(const char* str, float x, float y)
         //文字コード
         unsigned short code;
         if (IsDBCSLeadByte(str[i])) {
-            //2バイト文字のコードは[先導コード]*256 + [文字コード]です
+            //2バイト文字のコードは[先導コード] + [文字コード]です
             code = (BYTE)str[i] << 8 | (BYTE)str[i + 1];
             i++;
         }
         else {
-            //1バイト文字のコードは1バイト目のUINT変換、
+            //1バイト文字のコード
             code = str[i];
         }
 
@@ -757,7 +756,7 @@ void text(const char* str, float x, float y)
             (unsigned __int64)CurFontFace.id << 32 |
             (unsigned __int64)FontSize << 16 |
             code;
-        //keyでmapのテクスチャを探す
+        //keyでmap内にテクスチャがあるか探す
         TEXTURE* tex = 0;
         auto itr = FontTextureMap.find(key);
         if (itr != FontTextureMap.end()) {
@@ -765,7 +764,7 @@ void text(const char* str, float x, float y)
             tex = &itr->second;
         }
         else {
-            //なかったのでつくる
+            //なかったのでフォントのテクスチャをつくる
             tex = createFontTexture(key);
         }
 
