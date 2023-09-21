@@ -740,7 +740,7 @@ FONT_TEXTURE* createFontTexture(unsigned __int64 key)
         FontTextureMap[key] = FONT_TEXTURE(obj,
             gm.gmCellIncX, tm.tmHeight,
             texWidth, texHeight,
-            gm.gmptGlyphOrigin.x, gm.gmptGlyphOrigin.y
+            gm.gmptGlyphOrigin.x, -tm.tmAscent + gm.gmptGlyphOrigin.y
         );
         return &FontTextureMap[key];
     }
@@ -753,7 +753,7 @@ FONT_TEXTURE* createFontTexture(unsigned __int64 key)
     DWORD* texBuf = (DWORD*)lockedRect.pBits;   // テクスチャメモリへのポインタ
     for (int y = 0; y < texHeight; y++) {
         for (int x = 0; x < texWidth; x++) {
-            DWORD alpha = fontBuf[y * texWidth + x] * 255 / level;
+            DWORD alpha = fontBuf[y * texWidth + x] * 255UL / level;
             texBuf[y * texWidth + x] = (alpha << 24) | 0x00ffffff;
         }
     }
@@ -762,7 +762,7 @@ FONT_TEXTURE* createFontTexture(unsigned __int64 key)
     FontTextureMap[key] = FONT_TEXTURE(obj, 
         gm.gmCellIncX, tm.tmHeight,
         texWidth, texHeight, 
-        gm.gmptGlyphOrigin.x, gm.gmptGlyphOrigin.y
+        gm.gmptGlyphOrigin.x, -tm.tmAscent + gm.gmptGlyphOrigin.y
     );
     return &FontTextureMap[key];
 }
@@ -804,7 +804,8 @@ void text(const char* str, float x, float y)
         World2D.identity();
         World2D.mulTranslate(0.5f, -0.5f, 0);
         World2D.mulScaling((float)tex->texWidth, (float)tex->texHeight, 1.0f);
-        World2D.mulTranslate(tex->ofstX+x+0.5f, tex->ofstY-y-tex->height+0.5f, 0);
+        World2D.mulTranslate(
+            x - 0.5f + tex->ofstX, -y + 0.5f + tex->ofstY, 0);
         Dev->SetTransform(D3DTS_WORLD, &World2D);
         Dev->SetTransform(D3DTS_VIEW, &View2D);
         Dev->SetTransform(D3DTS_PROJECTION, &Proj2D);
@@ -822,10 +823,10 @@ void text(const char* str, float x, float y)
     }
 }
 
-static float PrintY = 0;
+static float PrintY = 10;
 void printInit()
 {
-    PrintY = 0;
+    PrintY = 10;
 }
 void print(const char* format, ...)
 {
@@ -835,7 +836,7 @@ void print(const char* format, ...)
     vsprintf_s(str, format, args);
     va_end(args);
 
-    float printX = 20;
+    float printX = 10;
     text(str, printX, PrintY);
     PrintY += FontSize;
 }
