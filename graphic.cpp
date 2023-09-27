@@ -715,7 +715,7 @@ FONT_TEXTURE* createFontTexture(unsigned __int64 key)
     DWORD bmpSize = GetGlyphOutline(hdc, code, GGO_GRAY4_BITMAP, &gm, 0, NULL, &mat);
     BYTE* bmpBuf = new BYTE[bmpSize];
     GetGlyphOutline(hdc, code, GGO_GRAY4_BITMAP, &gm, bmpSize, bmpBuf, &mat);
-    //α値の諧調 (GGO_GRAY4_BITMAPは17諧調。bmpBuf[i]は０～１６の値となる)
+    //α値の階調 (GGO_GRAY4_BITMAPは17階調。bmpBuf[i]は０～１６の値となる)
     DWORD tone = 16;//最大値
 
     //デバイスコンテキストとフォントハンドルの開放
@@ -794,19 +794,19 @@ void text(const char* str, float x, float y)
 
         //マップ検索用key(フォントID＋フォントサイズ＋文字コード)をつくる
         unsigned __int64 key =
-            (unsigned __int64)CurFontFace.id << 32 |
-            (unsigned __int64)FontSize << 16 |
-            code;
+        (unsigned __int64)CurFontFace.id << 32 |
+        (unsigned __int64)FontSize << 16 |
+        code;
         //keyでマップ内にテクスチャがあるか探す
         FONT_TEXTURE* tex = 0;
         auto itr = FontTextureMap.find(key);
-        if (itr != FontTextureMap.end()) {
-            //あった
-            tex = &itr->second;
-        }
-        else {
+        if (itr == FontTextureMap.end()) {
             //なかったのでフォントのテクスチャをこの場でつくる
             tex = createFontTexture(key);
+        }
+        else {
+            //あったのでアドレスをゲットする
+            tex = &itr->second;
         }
 
         //行列
@@ -814,7 +814,7 @@ void text(const char* str, float x, float y)
         World2D.mulTranslate(0.5f, -0.5f, 0);
         World2D.mulScaling(tex->texWidth, tex->texHeight, 1.0f);
         World2D.mulTranslate(tex->ofstX, -tex->ofstY, 0);
-        World2D.mulTranslate(x + 0.5f, -(y + 0.5f), 0);
+        World2D.mulTranslate(x+0.5f, -(y+0.5f ), 0);
         Dev->SetTransform(D3DTS_WORLD, &World2D);
         Dev->SetTransform(D3DTS_VIEW, &View2D);
         Dev->SetTransform(D3DTS_PROJECTION, &Proj2D);
