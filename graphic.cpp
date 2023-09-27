@@ -629,14 +629,17 @@ void line3D(const VEC& p1, const VEC& p2)
 
 
 //------------------------------------------------------------------------
+//現在描画中のフォント構造体
 struct CURRENT_FONT_FACE {
     std::string name = "ＭＳ ゴシック";
     unsigned char charset = SHIFTJIS_CHARSET;
     int id = 0;
 };
 static CURRENT_FONT_FACE CurFontFace;
+//FontFaceごとにIｄを付けて管理するマップ
 static std::unordered_map<std::string, int> FontIdMap{ {CurFontFace.name, 0} };
 static int FontIdCnt = 0;
+//描画するフォントを設定する
 void fontFace(const char* fontname, unsigned charset)
 {
     CurFontFace.name = fontname;
@@ -654,80 +657,77 @@ void fontFace(const char* fontname, unsigned charset)
     }
 }
 
+//フォントサイズ
 static int FontSize=50;
 void fontSize(int size)
 {
     FontSize = size;
 }
 
+//FONT_TEXTURE構造体(フォントの描画に必要なデータ達)
 struct FONT_TEXTURE {
-    struct IDirect3DTexture9* obj;
-    int width;
-    int height;
-    int texWidth;
-    int texHeight;
-    int ofstX;
-    int ofstY;
+    IDirect3DTexture9* obj;
+    float texWidth,texHeight;//テクスチャの幅、高さ
+    float width,height;//描画幅、高さ
+    float ofstX, ofstY;//描画するときにずらす値
     FONT_TEXTURE()
         : obj(nullptr)
-        , width(0)
-        , height(0)
-        , texWidth(0)
-        , texHeight(0)
-        , ofstX(0)
-        , ofstY(0)
+        , texWidth(0), texHeight(0)
+        , width(0), height(0)
+        , ofstX(0), ofstY(0)
     {
     }
-    FONT_TEXTURE(struct IDirect3DTexture9* obj, 
-        int width, int height,
+    FONT_TEXTURE(
+        IDirect3DTexture9* obj, 
         int texWidth, int texHeight,
+        int width, int height,
         int ofstX, int ofstY)
         : obj(obj)
-        , width(width)
-        , height(height)
-        , texWidth(texWidth)
-        , texHeight(texHeight)
-        , ofstX(ofstX)
-        , ofstY(ofstY)
+        , width((float)width), height((float)height)
+        , texWidth((float)texWidth), texHeight((float)texHeight)
+        , ofstX((float)ofstX), ofstY((float)ofstY)
     {
     }
 };
 
+//フォントテクスチャデータを管理するマップ
 static std::unordered_map<unsigned __int64, FONT_TEXTURE> FontTextureMap;
+
+//１文字分のフォントテクスチャをつくって上のマップに追加する
 FONT_TEXTURE* createFontTexture(unsigned __int64 key)
 {
-    //フォントの生成
-    LOGFONT lf = { FontSize, 0, 0, 0, 0, 0, 0, 0, CurFontFace.charset, 
-    OUT_TT_ONLY_PRECIS, CLIP_DEFAULT_PRECIS, PROOF_QUALITY, FIXED_PITCH | FF_MODERN };
-    strcpy_s(lf.lfFaceName, CurFontFace.name.c_str());
-    HFONT hFont = CreateFontIndirect(&lf);
+    //フォント（サイズやフォントの種類）を決める！
+    HFONT hFont = CreateFont(FontSize, 0, 0, 0, 0, 0, 0, 0, CurFontFace.charset,
+    OUT_TT_ONLY_PRECIS, CLIP_DEFAULT_PRECIS, PROOF_QUALITY, FIXED_PITCH | FF_MODERN,
+    CurFontFace.name.c_str());
     WARNING(!hFont, "Font", "Create error");
-
     //デバイスコンテキスト取得
     HDC hdc = GetDC(NULL);
     //デバイスコンテキストにフォントを設定
     HFONT oldFont = (HFONT)SelectObject(hdc, hFont);
 
-    //フォントビットマップ取得
+    //フォント情報とビットマップを取得
     TEXTMETRIC tm;
     GetTextMetrics(hdc, &tm);
     GLYPHMETRICS gm;
-    CONST MAT2 mat = { {0,1},{0,0},{0,0},{0,1} };
-    UINT code = key & 0xffff;
-    DWORD size = GetGlyphOutline(hdc, code, GGO_GRAY4_BITMAP, &gm, 0, NULL, &mat);
-    BYTE* fontBuf = new BYTE[size];
-    GetGlyphOutline(hdc, code, GGO_GRAY4_BITMAP, &gm, size, fontBuf, &mat);
+    CONST MAT2 mat = {{0,1},{0,0},{0,0},{0,1}};
+    UINT code = key & 0xffff;//keyから文字コードを取り出す
+    DWORD bmpSize = GetGlyphOutline(hdc, code, GGO_GRAY4_BITMAP, &gm, 0, NULL, &mat);
+    BYTE* bmpBuf = new BYTE[bmpSize];
+    GetGlyphOutline(hdc, code, GGO_GRAY4_BITMAP, &gm, bmpSize, bmpBuf, &mat);
+    //α値の諧調 (GGO_GRAY4_BITMAPは17諧調。bmpBuf[i]は０～１６の値となる)
+    DWORD tone = 16;//最大値
 
     //デバイスコンテキストとフォントハンドルの開放
     SelectObject(hdc, oldFont);
     DeleteObject(hFont);
     ReleaseDC(NULL, hdc);
 
-    //テクスチャオブジェクトをつくる
-    IDirect3DTexture9* obj = 0;
+    //空のテクスチャオブジェクトをつくる
     HRESULT hr;
-    int texWidth = (gm.gmBlackBoxX + 3) / 4 * 4;
-    int texHeight = gm.gmBlackBoxY;
+    IDirect3DTexture9* obj = 0;
+    DWORD texWidth = (gm.gmBlackBoxX + 3) & 0xfffc;//4の倍数にする
+    DWORD texHeight = gm.gmBlackBoxY;
     hr = Dev->CreateTexture(texWidth,texHeight, 1,
         0/*USAGE*/, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED,
         &obj, NULL
@@ -736,42 +736,51 @@ FONT_TEXTURE* createFontTexture(unsigned __int64 key)
 
     //半角全角スペースは左下に点があるのでテクスチャにコピーしない
     if (code == 0x20 || code == 0x8140) {
-        delete[] fontBuf;
+        delete[] bmpBuf;
         FontTextureMap[key] = FONT_TEXTURE(obj,
-            gm.gmCellIncX, tm.tmHeight,
             texWidth, texHeight,
-            gm.gmptGlyphOrigin.x, -tm.tmAscent + gm.gmptGlyphOrigin.y
+            gm.gmCellIncX, tm.tmHeight,
+            gm.gmptGlyphOrigin.x, tm.tmAscent - gm.gmptGlyphOrigin.y
         );
         return &FontTextureMap[key];
     }
 
-    // テクスチャにフォントビットマップ情報を書き込み
-    //α値の段階 (GGO_GRAY4_BITMAPなので17段階)
-    unsigned level = 17 - 1;
+    //テクスチャにフォントビットマップを書き込む
     D3DLOCKED_RECT lockedRect;
-    obj->LockRect(0, &lockedRect, NULL, 0);  // ロック
-    DWORD* texBuf = (DWORD*)lockedRect.pBits;   // テクスチャメモリへのポインタ
-    for (int y = 0; y < texHeight; y++) {
-        for (int x = 0; x < texWidth; x++) {
-            DWORD alpha = fontBuf[y * texWidth + x] * 255UL / level;
-            texBuf[y * texWidth + x] = (alpha << 24) | 0x00ffffff;
+    obj->LockRect(0, &lockedRect, NULL, 0);// ロック
+    DWORD* texBuf = (DWORD*)lockedRect.pBits;// テクスチャメモリへのポインタ
+    DWORD x, y, i, alpha;
+    for (y = 0; y < texHeight; y++) {
+        for (x = 0; x < texWidth; x++) {
+            i = y * texWidth + x;
+            if (i < bmpSize) {
+                alpha = bmpBuf[i] * 255 / tone;//0～16を0～255に変換
+                texBuf[i] = (alpha << 24) | 0x00ffffff;
+            }
         }
     }
     obj->UnlockRect(0);
-    delete[] fontBuf;
-    FontTextureMap[key] = FONT_TEXTURE(obj, 
-        gm.gmCellIncX, tm.tmHeight,
-        texWidth, texHeight, 
-        gm.gmptGlyphOrigin.x, -tm.tmAscent + gm.gmptGlyphOrigin.y
+    //コピーしたのでもうビットマップは要らない
+    delete[] bmpBuf;
+
+    //FONT_TEXTURE(描画に必要なデータ達)をマップに登録
+    FontTextureMap[key] = FONT_TEXTURE(obj, //テクスチャオブジェクト
+        texWidth, texHeight,//テクスチャの幅と高さ
+        gm.gmCellIncX, tm.tmHeight,//描画する幅と高さ
+        gm.gmptGlyphOrigin.x, tm.tmAscent - gm.gmptGlyphOrigin.y//ずらす値
     );
+
     return &FontTextureMap[key];
 }
 
+//指定した文字列を指定したスクリーン座標に描画する
 void text(const char* str, float x, float y)
 {
     int len = (int)strlen(str);
+
     for (int i = 0; i < len; i++) {
-        //文字コード
+
+        //文字コードの決定
         unsigned short code;
         if (IsDBCSLeadByte(str[i])) {
             //2バイト文字のコードは[先導コード] + [文字コード]です
@@ -783,12 +792,12 @@ void text(const char* str, float x, float y)
             code = str[i];
         }
 
-        //keyをつくる
+        //マップ検索用key(フォントID＋フォントサイズ＋文字コード)をつくる
         unsigned __int64 key =
             (unsigned __int64)CurFontFace.id << 32 |
             (unsigned __int64)FontSize << 16 |
             code;
-        //keyでmap内にテクスチャがあるか探す
+        //keyでマップ内にテクスチャがあるか探す
         FONT_TEXTURE* tex = 0;
         auto itr = FontTextureMap.find(key);
         if (itr != FontTextureMap.end()) {
@@ -796,16 +805,16 @@ void text(const char* str, float x, float y)
             tex = &itr->second;
         }
         else {
-            //なかったのでフォントのテクスチャをつくる
+            //なかったのでフォントのテクスチャをこの場でつくる
             tex = createFontTexture(key);
         }
 
         //行列
         World2D.identity();
         World2D.mulTranslate(0.5f, -0.5f, 0);
-        World2D.mulScaling((float)tex->texWidth, (float)tex->texHeight, 1.0f);
-        World2D.mulTranslate(
-            x - 0.5f + tex->ofstX, -y + 0.5f + tex->ofstY, 0);
+        World2D.mulScaling(tex->texWidth, tex->texHeight, 1.0f);
+        World2D.mulTranslate(tex->ofstX, -tex->ofstY, 0);
+        World2D.mulTranslate(x + 0.5f, -(y + 0.5f), 0);
         Dev->SetTransform(D3DTS_WORLD, &World2D);
         Dev->SetTransform(D3DTS_VIEW, &View2D);
         Dev->SetTransform(D3DTS_PROJECTION, &Proj2D);
@@ -818,7 +827,8 @@ void text(const char* str, float x, float y)
         Dev->SetStreamSource(0, VertexBuffers[VtxSquare].obj, 0, sizeof(VERTEX));
         //描画
         Dev->DrawPrimitive(D3DPT_TRIANGLEFAN, 0, 2);
-
+        
+        //次の文字の描画位置ｘを求めておく
         x += tex->width;
     }
 }
