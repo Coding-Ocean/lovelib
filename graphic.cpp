@@ -797,6 +797,7 @@ void text(const char* str, float x, float y)
         (unsigned __int64)CurFontFace.id << 32 |
         (unsigned __int64)FontSize << 16 |
         code;
+
         //keyでマップ内にテクスチャがあるか探す
         FONT_TEXTURE* tex = 0;
         auto itr = FontTextureMap.find(key);
