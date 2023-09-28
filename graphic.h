@@ -47,7 +47,7 @@ void line3D(const VEC& p1, const VEC& p2);
 //ƒtƒHƒ“ƒg
 void fontFace(const char* fontname, unsigned charset = 128);//128=>SHIFTJIS_CHARSET
 void fontSize(int size);
-void text(const char* str, float x, float y);
+float text(const char* str, float x, float y);
 void printInit();
 void print(const char* format, ...);
 void destroyFontTextures();

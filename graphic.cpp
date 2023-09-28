@@ -383,23 +383,24 @@ int createTexture(unsigned char* pixels, int texWidth, int texHeight, const char
     WARNING(FAILED(hr), "Texture", "Create error");
 
     //テクスチャオブジェクトに画像をコピー
-    D3DLOCKED_RECT lockRect;
-    hr = obj->LockRect(0, &lockRect, NULL, D3DLOCK_DISCARD);
+    D3DLOCKED_RECT lockedRect;
+    hr = obj->LockRect(0, &lockedRect, NULL, D3DLOCK_DISCARD);
     WARNING(FAILED(hr), "Texture", "Lock error");
     unsigned char r, g, b, a;
     unsigned int argb;
+    //コピー先ポインタ
+    unsigned int* texBuf = (unsigned int*)lockedRect.pBits;
     for (int y = 0; y < texHeight; y++) {
         for (int x = 0; x < texWidth; x++) {
             //コピー元pixelデータ
-            int i = (x + y * texWidth) * 4;
-            r = pixels[i];
-            g = pixels[i + 1];
-            b = pixels[i + 2];
-            a = pixels[i + 3];
+            int i = x + y * texWidth;
+            r = pixels[i*4 + 0];
+            g = pixels[i*4 + 1];
+            b = pixels[i*4 + 2];
+            a = pixels[i*4 + 3];
             argb = a << 24 | r << 16 | g << 8 | b;
-            //コピー先アドレス
-            void* buffer = (unsigned char*)lockRect.pBits + i;
-            memcpy(buffer, &argb, sizeof(unsigned int));
+            //テクスチャにコピー
+            texBuf[i] = argb;
         }
     }
     obj->UnlockRect(0);
@@ -628,17 +629,21 @@ void line3D(const VEC& p1, const VEC& p2)
 }
 
 
-//------------------------------------------------------------------------
-//現在描画中のフォント構造体
+//FONT--------------------------------------------------------------------
+
+//現在描画中のフォントフェイス構造体
 struct CURRENT_FONT_FACE {
-    std::string name = "ＭＳ ゴシック";
-    unsigned char charset = SHIFTJIS_CHARSET;
-    int id = 0;
+    std::string name;
+    unsigned long charset;
+    int size;
+    int id;
 };
-static CURRENT_FONT_FACE CurFontFace;
-//FontFaceごとにIｄを付けて管理するマップ
+static CURRENT_FONT_FACE CurFontFace{ "ＭＳ ゴシック",SHIFTJIS_CHARSET,50,0 };
+
+//FontFace名ごとにｉｄを付けて管理するマップ
 static std::unordered_map<std::string, int> FontIdMap{ {CurFontFace.name, 0} };
 static int FontIdCnt = 0;
+
 //描画するフォントを設定する
 void fontFace(const char* fontname, unsigned charset)
 {
@@ -652,24 +657,26 @@ void fontFace(const char* fontname, unsigned charset)
     }
     else {
         FontIdCnt++;
+        WARNING(FontIdCnt >= 32, "FontFace", "これ以上追加できません");
         FontIdMap[fontname] = FontIdCnt;
         CurFontFace.id = FontIdCnt;
     }
 }
 
-//フォントサイズ
-static int FontSize=50;
+//フォントサイズを設定する
 void fontSize(int size)
 {
-    FontSize = size;
+    WARNING(size > 2048, "FontSize", "2048より大きいサイズは指定できません");
+    CurFontFace.size = size;
 }
 
-//FONT_TEXTURE構造体(フォントの描画に必要なデータ達)
+//FONT_TEXTURE構造体(下のマップに保存していくフォントの描画に必要なデータ達)
 struct FONT_TEXTURE {
     IDirect3DTexture9* obj;
     float texWidth,texHeight;//テクスチャの幅、高さ
     float width,height;//描画幅、高さ
     float ofstX, ofstY;//描画するときにずらす値
+    //デフォルトコンストラクタ
     FONT_TEXTURE()
         : obj(nullptr)
         , texWidth(0), texHeight(0)
@@ -677,6 +684,7 @@ struct FONT_TEXTURE {
         , ofstX(0), ofstY(0)
     {
     }
+    //コンストラクタ。描画用にint型をfloat型に変換して保持する
     FONT_TEXTURE(
         IDirect3DTexture9* obj, 
         int texWidth, int texHeight,
@@ -691,15 +699,19 @@ struct FONT_TEXTURE {
 };
 
 //フォントテクスチャデータを管理するマップ
-static std::unordered_map<unsigned __int64, FONT_TEXTURE> FontTextureMap;
+static std::unordered_map<DWORD, FONT_TEXTURE> FontTextureMap;
 
 //１文字分のフォントテクスチャをつくって上のマップに追加する
-FONT_TEXTURE* createFontTexture(unsigned __int64 key)
+FONT_TEXTURE* createFontTexture(DWORD key)
 {
     //フォント（サイズやフォントの種類）を決める！
-    HFONT hFont = CreateFont(FontSize, 0, 0, 0, 0, 0, 0, 0, CurFontFace.charset,
-    OUT_TT_ONLY_PRECIS, CLIP_DEFAULT_PRECIS, PROOF_QUALITY, FIXED_PITCH | FF_MODERN,
-    CurFontFace.name.c_str());
+    HFONT hFont = CreateFont(
+        CurFontFace.size, 0, 0, 0, 0, 0, 0, 0, 
+        CurFontFace.charset,
+        OUT_TT_ONLY_PRECIS, CLIP_DEFAULT_PRECIS, 
+        PROOF_QUALITY, FIXED_PITCH | FF_MODERN,
+        CurFontFace.name.c_str()
+    );
     WARNING(!hFont, "Font", "Create error");
     //デバイスコンテキスト取得
     HDC hdc = GetDC(NULL);
@@ -728,26 +740,16 @@ FONT_TEXTURE* createFontTexture(unsigned __int64 key)
     IDirect3DTexture9* obj = 0;
     DWORD texWidth = (gm.gmBlackBoxX + 3) & 0xfffc;//4の倍数にする
     DWORD texHeight = gm.gmBlackBoxY;
-    hr = Dev->CreateTexture(texWidth,texHeight, 1,
+    hr = Dev->CreateTexture(texWidth, texHeight, 1,
         0/*USAGE*/, D3DFMT_A8R8G8B8, D3DPOOL_MANAGED,
         &obj, NULL
     );
-    WARNING(FAILED(hr), "Texture", "Create error");
+    WARNING(FAILED(hr), "FontTexture", "Create error");
 
-    //半角全角スペースは左下に点があるのでテクスチャにコピーしない
-    if (code == 0x20 || code == 0x8140) {
-        delete[] bmpBuf;
-        FontTextureMap[key] = FONT_TEXTURE(obj,
-            texWidth, texHeight,
-            gm.gmCellIncX, tm.tmHeight,
-            gm.gmptGlyphOrigin.x, tm.tmAscent - gm.gmptGlyphOrigin.y
-        );
-        return &FontTextureMap[key];
-    }
-
-    //テクスチャにフォントビットマップを書き込む
+    //テクスチャにフォントビットマップをコピー
     D3DLOCKED_RECT lockedRect;
-    obj->LockRect(0, &lockedRect, NULL, 0);// ロック
+    obj->LockRect(0, &lockedRect, NULL, 0);
+    WARNING(FAILED(hr), "FontTexture", "Lock error");
     DWORD* texBuf = (DWORD*)lockedRect.pBits;// テクスチャメモリへのポインタ
     DWORD x, y, i, alpha;
     for (y = 0; y < texHeight; y++) {
@@ -760,28 +762,31 @@ FONT_TEXTURE* createFontTexture(unsigned __int64 key)
         }
     }
     obj->UnlockRect(0);
+    
     //コピーしたのでもうビットマップは要らない
     delete[] bmpBuf;
 
     //FONT_TEXTURE(描画に必要なデータ達)をマップに登録
-    FontTextureMap[key] = FONT_TEXTURE(obj, //テクスチャオブジェクト
+    FontTextureMap[key] = FONT_TEXTURE(
+        obj, //テクスチャオブジェクト
         texWidth, texHeight,//テクスチャの幅と高さ
         gm.gmCellIncX, tm.tmHeight,//描画する幅と高さ
-        gm.gmptGlyphOrigin.x, tm.tmAscent - gm.gmptGlyphOrigin.y//ずらす値
+        gm.gmptGlyphOrigin.x, tm.tmAscent - gm.gmptGlyphOrigin.y//描画する時にずらす値
     );
 
     return &FontTextureMap[key];
 }
 
-//指定した文字列を指定したスクリーン座標に描画する
-void text(const char* str, float x, float y)
+//指定した文字列を指定したスクリーン座標で描画する
+float text(const char* str, float x, float y)
 {
     int len = (int)strlen(str);
 
+    //ループしながら１文字ずつ描画していく
     for (int i = 0; i < len; i++) {
 
-        //文字コードの決定
-        unsigned short code;
+        //文字コードの決定(マルチバイトコードしか扱わない前提)
+        WORD code;
         if (IsDBCSLeadByte(str[i])) {
             //2バイト文字のコードは[先導コード] + [文字コード]です
             code = (BYTE)str[i] << 8 | (BYTE)str[i + 1];
@@ -793,10 +798,7 @@ void text(const char* str, float x, float y)
         }
 
         //マップ検索用key(フォントID＋フォントサイズ＋文字コード)をつくる
-        unsigned __int64 key =
-        (unsigned __int64)CurFontFace.id << 32 |
-        (unsigned __int64)FontSize << 16 |
-        code;
+        DWORD key = CurFontFace.id << 27 | CurFontFace.size << 16 | code;
 
         //keyでマップ内にテクスチャがあるか探す
         FONT_TEXTURE* tex = 0;
@@ -816,6 +818,7 @@ void text(const char* str, float x, float y)
         World2D.mulScaling(tex->texWidth, tex->texHeight, 1.0f);
         World2D.mulTranslate(tex->ofstX, -tex->ofstY, 0);
         World2D.mulTranslate(x+0.5f, -(y+0.5f ), 0);
+        //       ↑DirectXの仕様で0.5ずらさないとテクスチャがずれる
         Dev->SetTransform(D3DTS_WORLD, &World2D);
         Dev->SetTransform(D3DTS_VIEW, &View2D);
         Dev->SetTransform(D3DTS_PROJECTION, &Proj2D);
@@ -832,6 +835,8 @@ void text(const char* str, float x, float y)
         //次の文字の描画位置ｘを求めておく
         x += tex->width;
     }
+    //横に続けて別の文字列を表示するための座標を返す
+    return x;
 }
 
 static float PrintY = 10;
@@ -849,7 +854,7 @@ void print(const char* format, ...)
 
     float printX = 10;
     text(str, printX, PrintY);
-    PrintY += FontSize;
+    PrintY += CurFontFace.size;
 }
 
 void destroyFontTextures()
