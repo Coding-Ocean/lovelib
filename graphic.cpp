@@ -713,6 +713,7 @@ FONT_TEXTURE* createFontTexture(DWORD key)
         CurFontFace.name.c_str()
     );
     WARNING(!hFont, "Font", "Create error");
+
     //デバイスコンテキスト取得
     HDC hdc = GetDC(NULL);
     //デバイスコンテキストにフォントを設定
@@ -839,22 +840,32 @@ float text(const char* str, float x, float y)
     return x;
 }
 
-static float PrintY = 10;
+static float PrintInitX = 10;
+static float PrintInitY = 10;
+static float PrintY = PrintInitY;
 void printInit()
 {
-    PrintY = 10;
+    PrintY = PrintInitY;
 }
 void print(const char* format, ...)
 {
+    char str[256];
     va_list args;
     va_start(args, format);
-    char str[256];
     vsprintf_s(str, format, args);
     va_end(args);
 
-    float printX = 10;
+    float printX = PrintInitX;
     text(str, printX, PrintY);
     PrintY += CurFontFace.size;
+}
+void setPrintInitX(float initX)
+{
+    PrintInitX = initX;
+}
+void setPrintInitY(float initY)
+{
+    PrintInitY = initY;
 }
 
 void destroyFontTextures()

@@ -50,6 +50,8 @@ void fontSize(int size);
 float text(const char* str, float x, float y);
 void printInit();
 void print(const char* format, ...);
+void setPrintInitX(float initX);
+void setPrintInitY(float initY);
 void destroyFontTextures();
 
 
