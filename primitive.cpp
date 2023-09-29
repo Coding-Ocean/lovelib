@@ -13,6 +13,16 @@ int createVtxSquare(float l)
 	};
 	return createVertexBuffer(vertices, _countof(vertices));
 }
+int createVtxSquare(float left, float top, float right, float bottom)
+{
+	VERTEX vertices[] = {
+		left,top,0,     0,0,-1, 0,0,
+		left,bottom,0,  0,0,-1, 0,1,
+		right,bottom,0, 0,0,-1, 1,1,
+		right,top,0,    0,0,-1, 1,0,
+	};
+	return createVertexBuffer(vertices, _countof(vertices));
+}
 int createIdxSquare()
 {
 	unsigned short indices[] = {

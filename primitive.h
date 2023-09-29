@@ -1,5 +1,6 @@
 #pragma once
-int createVtxSquare(float l=0.5f);
+int createVtxSquare(float l = 0.5f);
+int createVtxSquare(float left,float top, float right, float bottom);
 int createIdxSquare();
 int createVtxCircle(float radius = 0.5f, int numCorners = 30);
 int createVtxCube(float length=0.5f);

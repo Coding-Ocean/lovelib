@@ -38,8 +38,9 @@ MAT Proj;
 std::vector<VERTEX_BUFFER> VertexBuffers;
 std::vector<INDEX_BUFFER> IndexBuffers;
 std::vector<TEXTURE> Textures;
-int VtxSquare{};
+int VtxSquareCenter{};
 int VtxCircle{};
+int VtxSquareLeftTop{};
 int TexNone{};
 
 void createGraphic()
@@ -177,7 +178,7 @@ void createGraphic()
 
     //頂点バッファ０：正方形
     {
-        VtxSquare = createVtxSquare();
+        VtxSquareCenter = createVtxSquare();
     }
 
     //頂点バッファ１：円
@@ -185,6 +186,10 @@ void createGraphic()
         VtxCircle = createVtxCircle(0.5f, 60);
     }
 
+    //頂点バッファ２：フォント用正方形
+    {
+        VtxSquareLeftTop = createVtxSquare(0, 0, 1, -1);
+    }
     //テクスチャ０：テクスチャ無し
     {
         Textures.emplace_back(nullptr, 0, 0, "TexNone");
@@ -428,7 +433,7 @@ void rect(float px, float py, float w, float h, float rad, int order)
     Dev->SetTexture(0, 0);
     //頂点
     Dev->SetFVF(VERTEX_FORMAT);
-    Dev->SetStreamSource(0, VertexBuffers[VtxSquare].obj, 0, sizeof(VERTEX));
+    Dev->SetStreamSource(0, VertexBuffers[VtxSquareCenter].obj, 0, sizeof(VERTEX));
     //描画（最後のパラメタは描画する三角形数）
     Dev->DrawPrimitive(D3DPT_TRIANGLEFAN, 0, 2);
 }
@@ -474,9 +479,9 @@ void line(float sx, float sy, float ex, float ey, float thickness, int order)
     Dev->SetTexture(0, 0);
     //頂点
     Dev->SetFVF(VERTEX_FORMAT);
-    Dev->SetStreamSource(0, VertexBuffers[0].obj, 0, sizeof(VERTEX));
+    Dev->SetStreamSource(0, VertexBuffers[VtxSquareCenter].obj, 0, sizeof(VERTEX));
     //描画（最後のパラメタは描画する三角形数）
-    Dev->DrawPrimitive(D3DPT_TRIANGLEFAN, 0, VertexBuffers[0].numVertices - 2);
+    Dev->DrawPrimitive(D3DPT_TRIANGLEFAN, 0, 2);
 }
 
 void arrow(float sx, float sy, float ex, float ey, float thickness, float size, int order) {
@@ -584,10 +589,12 @@ void image(int idx, float px, float py, float rad, float scale, int order)
     Dev->SetTexture(0, Textures[idx].obj);
     //頂点
     Dev->SetFVF(VERTEX_FORMAT);
-    Dev->SetStreamSource(0, VertexBuffers[0].obj, 0, sizeof(VERTEX));
+    Dev->SetStreamSource(0, VertexBuffers[VtxSquareCenter].obj, 0, sizeof(VERTEX));
     //描画
     Dev->DrawPrimitive(D3DPT_TRIANGLEFAN, 0, 2);
 }
+
+//3D-------------------------------------------------------------------
 
 void model(int vertexId, int indexId, int textureId, MAT& world)
 {
@@ -635,10 +642,10 @@ void line3D(const VEC& p1, const VEC& p2)
 struct CURRENT_FONT_FACE {
     std::string name;
     unsigned long charset;
-    int size;
     int id;
+    int size;
 };
-static CURRENT_FONT_FACE CurFontFace{ "ＭＳ ゴシック",SHIFTJIS_CHARSET,50,0 };
+static CURRENT_FONT_FACE CurFontFace{ "ＭＳ ゴシック",SHIFTJIS_CHARSET,0,50 };
 
 //FontFace名ごとにｉｄを付けて管理するマップ
 static std::unordered_map<std::string, int> FontIdMap{ {CurFontFace.name, 0} };
@@ -647,19 +654,20 @@ static int FontIdCnt = 0;
 //描画するフォントを設定する
 void fontFace(const char* fontname, unsigned charset)
 {
+    //フォント名とcharset
     CurFontFace.name = fontname;
     CurFontFace.charset = charset;
 
     //CurFontFace.idをセットする
     auto itr = FontIdMap.find(fontname);
-    if (itr != FontIdMap.end()) {
-        CurFontFace.id = itr->second;
-    }
-    else {
+    if (itr == FontIdMap.end()) {
         FontIdCnt++;
         WARNING(FontIdCnt >= 32, "FontFace", "これ以上追加できません");
         FontIdMap[fontname] = FontIdCnt;
         CurFontFace.id = FontIdCnt;
+    }
+    else {
+        CurFontFace.id = itr->second;
     }
 }
 
@@ -719,7 +727,7 @@ FONT_TEXTURE* createFontTexture(DWORD key)
     //デバイスコンテキストにフォントを設定
     HFONT oldFont = (HFONT)SelectObject(hdc, hFont);
 
-    //フォント情報とビットマップを取得
+    //フォントの各種寸法とビットマップを取得
     TEXTMETRIC tm;
     GetTextMetrics(hdc, &tm);
     GLYPHMETRICS gm;
@@ -732,8 +740,8 @@ FONT_TEXTURE* createFontTexture(DWORD key)
     DWORD tone = 16;//最大値
 
     //デバイスコンテキストとフォントハンドルの開放
-    SelectObject(hdc, oldFont);
     DeleteObject(hFont);
+    SelectObject(hdc, oldFont);
     ReleaseDC(NULL, hdc);
 
     //空のテクスチャオブジェクトをつくる
@@ -805,20 +813,19 @@ float text(const char* str, float x, float y)
         FONT_TEXTURE* tex = 0;
         auto itr = FontTextureMap.find(key);
         if (itr == FontTextureMap.end()) {
-            //なかったのでフォントのテクスチャをこの場でつくる
+            //なかったのでフォントのテクスチャをこの場でつくってアドレスをもらう
             tex = createFontTexture(key);
         }
         else {
-            //あったのでアドレスをゲットする
+            //あったのでアドレスを取得する
             tex = &itr->second;
         }
 
         //行列
         World2D.identity();
-        World2D.mulTranslate(0.5f, -0.5f, 0);
         World2D.mulScaling(tex->texWidth, tex->texHeight, 1.0f);
         World2D.mulTranslate(tex->ofstX, -tex->ofstY, 0);
-        World2D.mulTranslate(x+0.5f, -(y+0.5f ), 0);
+        World2D.mulTranslate(x + 0.5f, -(y + 0.5f), 0);
         //       ↑DirectXの仕様で0.5ずらさないとテクスチャがずれる
         Dev->SetTransform(D3DTS_WORLD, &World2D);
         Dev->SetTransform(D3DTS_VIEW, &View2D);
@@ -829,7 +836,7 @@ float text(const char* str, float x, float y)
         Dev->SetTexture(0, tex->obj);
         //頂点
         Dev->SetFVF(VERTEX_FORMAT);
-        Dev->SetStreamSource(0, VertexBuffers[VtxSquare].obj, 0, sizeof(VERTEX));
+        Dev->SetStreamSource(0, VertexBuffers[VtxSquareLeftTop].obj, 0, sizeof(VERTEX));
         //描画
         Dev->DrawPrimitive(D3DPT_TRIANGLEFAN, 0, 2);
         
