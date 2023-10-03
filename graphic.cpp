@@ -1,10 +1,9 @@
 #pragma comment(lib, "d3d9.lib")
 
-#include <d3d9.h>
-#include <map>
 #include <unordered_map>
 #include <vector>
 #include <cmath>
+#include <d3d9.h>
 #include "common.h"
 #include "VERTEX.h"
 #include "VERTEX_BUFFER.h"
@@ -14,6 +13,7 @@
 #include "VEC.h"
 #include "primitive.h"
 #include "graphic.h"
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
@@ -579,7 +579,7 @@ void image(int idx, float px, float py, float rad, float scale, int order)
     World2D.identity();
     World2D.mulScaling((float)Textures[idx].width * scale, (float)Textures[idx].height * scale, 1.0f);
     World2D.mulRotateZ(-rad);
-    World2D.mulTranslate(px, -py, order / 1000.0f);
+    World2D.mulTranslate(px+0.5f, -py-0.5f, order / 1000.0f);
     Dev->SetTransform(D3DTS_WORLD, &World2D);
     Dev->SetTransform(D3DTS_VIEW, &View2D);
     Dev->SetTransform(D3DTS_PROJECTION, &Proj2D);
