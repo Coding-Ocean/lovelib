@@ -117,6 +117,9 @@ void createGraphic()
         Dev->SetTextureStageState(0, D3DTSS_ALPHAOP, D3DTOP_MODULATE);
         Dev->SetTextureStageState(0, D3DTSS_ALPHAARG1, D3DTA_DIFFUSE);
         Dev->SetTextureStageState(0, D3DTSS_ALPHAARG2, D3DTA_TEXTURE);
+
+        Dev->SetSamplerState(0, D3DSAMP_ADDRESSU, D3DTADDRESS_CLAMP);
+        Dev->SetSamplerState(0, D3DSAMP_ADDRESSV, D3DTADDRESS_CLAMP);
     }
 
     //レンダーステートの初期設定
@@ -482,6 +485,8 @@ void line(float sx, float sy, float ex, float ey, float thickness, int order)
     Dev->SetStreamSource(0, VertexBuffers[VtxSquareCenter].obj, 0, sizeof(VERTEX));
     //描画（最後のパラメタは描画する三角形数）
     Dev->DrawPrimitive(D3DPT_TRIANGLEFAN, 0, 2);
+    circle(sx, sy, thickness, order);
+    circle(ex, ey, thickness, order);
 }
 
 void arrow(float sx, float sy, float ex, float ey, float thickness, float size, int order) {
@@ -501,6 +506,7 @@ void arrow(float sx, float sy, float ex, float ey, float thickness, float size, 
     ax = -size * c + -sizeY * -s;
     ay = -size * s + -sizeY * c;
     line(ex, ey, ex + ax, ey + ay, thickness, order);
+    circle(sx, sy, thickness, order);
     circle(ex, ey, thickness, order);
 }
 
@@ -825,7 +831,7 @@ float text(const char* str, float x, float y)
         World2D.identity();
         World2D.mulScaling(tex->texWidth, tex->texHeight, 1.0f);
         World2D.mulTranslate(tex->ofstX, -tex->ofstY, 0);
-        World2D.mulTranslate(x + 0.5f, -(y + 0.5f), 0);
+        World2D.mulTranslate(x - 0.5f, -(y - 0.5f), 0);
         //       ↑DirectXの仕様で0.5ずらさないとテクスチャがずれる
         Dev->SetTransform(D3DTS_WORLD, &World2D);
         Dev->SetTransform(D3DTS_VIEW, &View2D);
@@ -837,6 +843,7 @@ float text(const char* str, float x, float y)
         //頂点
         Dev->SetFVF(VERTEX_FORMAT);
         Dev->SetStreamSource(0, VertexBuffers[VtxSquareLeftTop].obj, 0, sizeof(VERTEX));
+        //Dev->SetStreamSource(0, VertexBuffers[VtxSquareCenter].obj, 0, sizeof(VERTEX));
         //描画
         Dev->DrawPrimitive(D3DPT_TRIANGLEFAN, 0, 2);
         

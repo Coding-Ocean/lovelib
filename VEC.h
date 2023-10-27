@@ -2,7 +2,7 @@
 struct VEC {
     float x, y, z;
     VEC();
-    VEC(float x, float y, float z);
+    VEC(float x, float y, float z=0);
     void set(float x, float y, float z = 0);
     VEC operator+(const VEC& v) const;
     VEC operator-(const VEC& v) const;
@@ -27,8 +27,10 @@ struct VEC {
 
 VEC operator* (float f, const VEC& v);// VEC = float * VEC
 VEC normalize(const VEC& a);
+float length(const VEC& a);
 float dot(const VEC& a, const VEC& b);
 VEC cross(const VEC& a, const VEC& b);
 float crossZ(const VEC& a, const VEC& b);
 float crossY(const VEC& a, const VEC& b);
+float clamp(float t, float a, float b);
 

@@ -20,6 +20,7 @@ void getInputState()
 	InputState[Now][KEY_D] = GetAsyncKeyState('D') < 0;
 	InputState[Now][KEY_W] = GetAsyncKeyState('W') < 0;
 	InputState[Now][KEY_S] = GetAsyncKeyState('S') < 0;
+	InputState[Now][KEY_SPACE] = GetAsyncKeyState(VK_SPACE) < 0;
 	InputState[Now][KEY_ESC] = GetAsyncKeyState(VK_ESCAPE) < 0;
 	InputState[Now][MOUSE_LBUTTON] = GetAsyncKeyState(VK_LBUTTON) < 0;
 	InputState[Now][MOUSE_RBUTTON] = GetAsyncKeyState(VK_RBUTTON) < 0;

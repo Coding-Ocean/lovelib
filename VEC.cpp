@@ -103,6 +103,10 @@ VEC normalize(const VEC& a) {
     }
     return a;
 }
+float length(const VEC& a)
+{
+  return sqrtf(a.x * a.x + a.y * a.y);
+}
 float dot(const VEC& a, const VEC& b) {
     return a.x * b.x + a.y * b.y + a.z * b.z;
 }
@@ -118,6 +122,15 @@ float crossZ(const VEC& a, const VEC& b) {
 }
 float crossY(const VEC& a, const VEC& b) {
     return a.x * b.z - a.z * b.x;
+}
+
+float clamp(float t, float a, float b)
+{
+  if (t < a)
+    t = a;
+  else if (t > b)
+    t = b;
+  return t;
 }
 
 

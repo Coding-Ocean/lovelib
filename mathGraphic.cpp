@@ -1,6 +1,7 @@
 #include"graphic.h"
 #include"window.h"
 #include"input.h"
+#include"mathGraphic.h"
 
 //原点とする座標
 static float Ox, Oy;
@@ -50,7 +51,7 @@ void mathCircle(float x, float y, float diameter)
 	diameter *= Scl;
 	circle(x, y, diameter, 5);
 }
-void mathLine(float sx, float sy, float ex, float ey, float thickness)
+void mathLine(float sx, float sy, float ex, float ey, float thickness, int order)
 {
 	//スクリーン座標に変換
 	sx = Ox + Scl * sx;
@@ -58,7 +59,7 @@ void mathLine(float sx, float sy, float ex, float ey, float thickness)
 	ex = Ox + Scl * ex;
 	ey = Oy - Scl * ey;
 	thickness *= Scl;
-	line(sx, sy, ex, ey, thickness, 5);
+	line(sx, sy, ex, ey, thickness, order);
 }
 void mathArrow(float sx, float sy, float ex, float ey, float thickness, float size)
 {
@@ -71,6 +72,14 @@ void mathArrow(float sx, float sy, float ex, float ey, float thickness, float si
 	size *= Scl;
 	arrow(sx, sy, ex, ey, thickness, size, 5);
 }
+void mathText(const char* str, float x, float y)
+{
+	//スクリーン座標に変換
+	x = Ox + Scl * x;
+	y = Oy - Scl * y;
+	text(str, x, y);
+}
+
 void mathGraph(float (*f)(float), float inc, float thickness, float diameter)
 {
 	float maxX = (getWidth() - Ox) / Scl + inc;
