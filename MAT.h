@@ -14,6 +14,7 @@ struct MAT : D3DMATRIX {
     void setOrtho(float w, float h);
     void setPers(float angle, float aspect, float n, float f);
     void transpose();
+    VEC mul(const struct VEC&);
 };
 
 /*éQçl

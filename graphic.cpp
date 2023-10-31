@@ -641,6 +641,25 @@ void line3D(const VEC& p1, const VEC& p2)
     model(VtxAxisX, IdxCylinder, TexNone, World);
 }
 
+void model(VERTEX* vtx, unsigned* idx, int numTriangles)
+{
+  //s—ñ
+  World.identity();
+  Dev->SetTransform(D3DTS_WORLD, &World);
+  Dev->SetTransform(D3DTS_VIEW, &View);
+  Dev->SetTransform(D3DTS_PROJECTION, &Proj);
+  //F
+  Dev->SetLight(0, &Light);
+  Dev->SetMaterial(&Material);
+  Dev->SetTexture(0, Textures[TexNone].obj);
+  //’¸“_
+  Dev->SetFVF(VERTEX_FORMAT);
+  //•`‰æ
+  Dev->DrawIndexedPrimitiveUP(D3DPT_TRIANGLELIST,0,0,
+    numTriangles,idx,D3DFMT_INDEX32,vtx,sizeof(VERTEX)
+  );
+}
+
 
 //FONT--------------------------------------------------------------------
 
