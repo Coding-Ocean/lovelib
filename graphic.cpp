@@ -641,7 +641,7 @@ void line3D(const VEC& p1, const VEC& p2)
     model(VtxAxisX, IdxCylinder, TexNone, World);
 }
 
-void model(VERTEX* vtx, unsigned* idx, int numTriangles)
+void model(VERTEX* vtx, unsigned* idx, int numTriangles, int texIdx)
 {
   //s—ñ
   World.identity();
@@ -651,7 +651,7 @@ void model(VERTEX* vtx, unsigned* idx, int numTriangles)
   //F
   Dev->SetLight(0, &Light);
   Dev->SetMaterial(&Material);
-  Dev->SetTexture(0, Textures[TexNone].obj);
+  Dev->SetTexture(0, Textures[texIdx].obj);
   //’¸“_
   Dev->SetFVF(VERTEX_FORMAT);
   //•`‰æ
