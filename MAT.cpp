@@ -133,13 +133,13 @@ void MAT::transpose()
     w = _34; _34 = _43; _43 = w;
 }
 
-VEC MAT::mul(const VEC& v)
+VEC mul(const VEC& v, const MAT& m)
 {
-  return VEC(
-    v.x * _11 + v.y * _21 + v.z * _31 + _41,
-    v.x * _12 + v.y * _22 + v.z * _32 + _42,
-    v.x * _13 + v.y * _23 + v.z * _33 + _43
-  );
+    return VEC(
+        v.x * m._11 + v.y * m._21 + v.z * m._31 + m._41,
+        v.x * m._12 + v.y * m._22 + v.z * m._32 + m._42,
+        v.x * m._13 + v.y * m._23 + v.z * m._33 + m._43
+    );
 }
 
 
