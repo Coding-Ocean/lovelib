@@ -641,7 +641,8 @@ void line3D(const VEC& p1, const VEC& p2)
     model(VtxAxisX, IdxCylinder, TexNone, World);
 }
 
-void model(VERTEX* vtx, unsigned* idx, int numTriangles, int texIdx)
+//SkinnedMeshà–¾—p‚É’Ç‰Á‚µ‚½ŠÖ”
+void model_(void* vertices, unsigned* indices, int numTriangles, int texIdx)
 {
   //s—ñ
   World.identity();
@@ -656,7 +657,7 @@ void model(VERTEX* vtx, unsigned* idx, int numTriangles, int texIdx)
   Dev->SetFVF(VERTEX_FORMAT);
   //•`‰æ
   Dev->DrawIndexedPrimitiveUP(D3DPT_TRIANGLELIST,0,0,
-    numTriangles,idx,D3DFMT_INDEX32,vtx,sizeof(VERTEX)
+    numTriangles,indices,D3DFMT_INDEX32,vertices,sizeof(VERTEX)
   );
 }
 

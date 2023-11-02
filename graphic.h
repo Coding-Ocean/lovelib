@@ -42,7 +42,7 @@ void image(int idx, float px, float py, float rad=0, float scale=1, int order=0)
 //３Dモデル
 extern int TexNone;
 void model(int vertexId, int indexId, int textureId, struct MAT& world);
-void model(struct VERTEX* vtx, unsigned* idx, int numTriangles, int textureId);
+void model_(void* vtx, unsigned* idx, int numTriangles, int textureId);
 void createLine3D(float radius=0.01f, int numCorners=4);
 void line3D(const VEC& p1, const VEC& p2);
 //フォント
